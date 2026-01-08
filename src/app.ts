@@ -4,7 +4,6 @@
 
 import express, { Express } from "express";
 import cors from "cors";
-import path from "path";
 import orderRoutes from "./routes/order.routes";
 import { errorHandler } from "./middlewares/error-handler.middleware";
 
@@ -24,9 +23,6 @@ export function createApp(): Express {
 
   // JSON body parser middleware
   app.use(express.json());
-
-  // Serve static files from public directory
-  app.use(express.static(path.join(__dirname, "../public")));
 
   // Health check endpoint
   app.get("/health", (_req, res) => {
