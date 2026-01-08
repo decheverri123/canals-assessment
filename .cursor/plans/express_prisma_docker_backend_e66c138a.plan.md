@@ -10,7 +10,7 @@ todos:
     status: completed
   - id: "3"
     content: Create database utilities (src/db/prisma.ts) with Prisma client singleton
-    status: pending
+    status: completed
   - id: "4"
     content: Implement distance utility (src/utils/distance.ts) with Haversine formula
     status: pending
