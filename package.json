@@ -12,7 +12,11 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:studio": "prisma studio",
     "test:order": "ts-node scripts/test-order.ts",
-    "test:order:simple": "./scripts/test-order-simple.sh"
+    "test:order:simple": "./scripts/test-order-simple.sh",
+    "test:setup": "ts-node scripts/setup-test-data.ts",
+    "test:perfect-order": "ts-node scripts/test-perfect-order.ts",
+    "test:multi-item": "ts-node scripts/test-multi-item-bundle.ts",
+    "test:phase1": "pnpm test:setup && pnpm test:perfect-order && pnpm test:multi-item"
   },
   "keywords": [],
   "author": "",

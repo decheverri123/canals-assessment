@@ -2,6 +2,57 @@
 
 This directory contains scripts to test the POST /orders endpoint with formatted, readable output.
 
+## Phase 1 Test Scripts (Happy Paths)
+
+These scripts test the basic functionality of the order system under normal conditions.
+
+### Setup Script
+
+**`setup-test-data.ts`** - Prepares test data for Phase 1 tests:
+- Creates "Product A" with 10 units in "Warehouse NY"
+- Creates Starter Kit products (Keyboard, Mouse, Monitor) in Warehouse NY
+
+**Usage:**
+```bash
+pnpm test:setup
+# or
+pnpm ts-node scripts/setup-test-data.ts
+```
+
+### Test Scripts
+
+**`test-perfect-order.ts`** - Tests the "Perfect" Order scenario:
+- Customer in New York orders 1 unit of "Product A"
+- Verifies: 201 Created, Order ID present, status PAID, inventory decreased from 10 to 9
+
+**Usage:**
+```bash
+pnpm test:perfect-order
+# or
+pnpm ts-node scripts/test-perfect-order.ts
+```
+
+**`test-multi-item-bundle.ts`** - Tests Multi-Item Bundle scenario:
+- Customer orders Starter Kit (1 Keyboard, 1 Mouse, 1 Monitor)
+- Verifies: Success, all three items deducted from the same warehouse
+
+**Usage:**
+```bash
+pnpm test:multi-item
+# or
+pnpm ts-node scripts/test-multi-item-bundle.ts
+```
+
+**Run all Phase 1 tests:**
+```bash
+pnpm test:phase1
+```
+
+This will:
+1. Setup test data
+2. Run the Perfect Order test
+3. Run the Multi-Item Bundle test
+
 ## Available Scripts
 
 ### 1. `test-order.ts` (Recommended)
