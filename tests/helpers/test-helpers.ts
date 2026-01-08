@@ -3,7 +3,7 @@
  * Provides utilities for creating test entities and common test operations
  */
 
-import { PrismaClient, OrderStatus } from "@prisma/client";
+import { OrderStatus } from "@prisma/client";
 import { testPrisma } from "../setup";
 
 /**

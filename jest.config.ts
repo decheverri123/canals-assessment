@@ -18,6 +18,7 @@ const config: Config = {
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   testTimeout: 30000, // 30 seconds for integration tests
   verbose: true,
+  maxWorkers: 1, // Run tests serially to avoid database race conditions
 };
 
 export default config;

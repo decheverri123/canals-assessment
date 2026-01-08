@@ -73,8 +73,9 @@ afterAll(async () => {
 });
 
 /**
- * Cleanup before each test suite
- * This ensures each test file starts with a clean database
+ * Cleanup before each test
+ * This ensures each test starts with a clean database
+ * Note: This runs before EVERY test, not just before each test file
  */
 beforeEach(async () => {
   await cleanupTestDatabase();
