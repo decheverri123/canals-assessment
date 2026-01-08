@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: canals-postgres
+    environment:
+      POSTGRES_USER: canals_user
+      POSTGRES_PASSWORD: canals_password
+      POSTGRES_DB: canals_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U canals_user -d canals_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: canals-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://canals_user:canals_password@postgres:5432/canals_db
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./prisma:/app/prisma
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
