@@ -97,7 +97,7 @@ describe('Order Routes Integration Tests', () => {
       });
 
       const orderData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: 'customer@example.com',
         },
         address: '123 Main St, New York, NY 10001',
@@ -157,7 +157,7 @@ describe('Order Routes Integration Tests', () => {
       });
 
       const orderData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: 'customer@example.com',
         },
         address: '123 Main St, New York, NY 10001',
@@ -188,7 +188,7 @@ describe('Order Routes Integration Tests', () => {
       });
 
       const orderData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: 'invalid-email', // Invalid email format
         },
         address: '123 Main St, New York, NY 10001',
@@ -223,7 +223,7 @@ describe('Order Routes Integration Tests', () => {
       });
 
       const orderData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           // email is missing
         },
         address: '123 Main St, New York, NY 10001',
@@ -253,7 +253,7 @@ describe('Order Routes Integration Tests', () => {
       });
 
       const orderData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: 'test@example.com',
         },
         // address is missing
@@ -275,7 +275,7 @@ describe('Order Routes Integration Tests', () => {
 
     it('should return 400 when items array is empty', async () => {
       const orderData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: 'test@example.com',
         },
         address: '123 Main St, New York, NY 10001',
@@ -305,7 +305,7 @@ describe('Order Routes Integration Tests', () => {
       });
 
       const orderData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: 'test@example.com',
         },
         address: '123 Main St, New York, NY 10001',
@@ -335,7 +335,7 @@ describe('Order Routes Integration Tests', () => {
       });
 
       const orderData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: 'test@example.com',
         },
         address: '123 Main St, New York, NY 10001',
@@ -365,7 +365,7 @@ describe('Order Routes Integration Tests', () => {
       });
 
       const orderData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: 'test@example.com',
         },
         address: '123 Main St, New York, NY 10001',
@@ -387,7 +387,7 @@ describe('Order Routes Integration Tests', () => {
 
     it('should return 400 when productId is missing', async () => {
       const orderData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: 'test@example.com',
         },
         address: '123 Main St, New York, NY 10001',
@@ -409,7 +409,7 @@ describe('Order Routes Integration Tests', () => {
 
     it('should return 400 when productId is empty string', async () => {
       const orderData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: 'test@example.com',
         },
         address: '123 Main St, New York, NY 10001',
@@ -439,7 +439,7 @@ describe('Order Routes Integration Tests', () => {
       const fakeProductId = '00000000-0000-0000-0000-000000000000';
 
       const orderData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: 'test@example.com',
         },
         address: '123 Main St, New York, NY 10001',
@@ -471,7 +471,7 @@ describe('Order Routes Integration Tests', () => {
       });
 
       const orderData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: 'test@example.com',
         },
         address: '123 Main St, New York, NY 10001',
@@ -504,7 +504,7 @@ describe('Order Routes Integration Tests', () => {
       });
 
       const orderData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: 'test@example.com',
         },
         address: '123 Main St, New York, NY 10001',
@@ -538,7 +538,7 @@ describe('Order Routes Integration Tests', () => {
       });
 
       const orderData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: 'test@example.com',
         },
         address: '123 Main St, New York, NY 10001',
@@ -565,7 +565,7 @@ describe('Order Routes Integration Tests', () => {
     it('should return proper error format for all error types', async () => {
       // Test validation error format
       const invalidData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: 'invalid-email',
         },
         address: '123 Main St',
@@ -593,7 +593,7 @@ describe('Order Routes Integration Tests', () => {
       });
 
       const orderData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: 'test@example.com',
         },
         address: '123 Main St, New York, NY 10001',
@@ -624,7 +624,7 @@ describe('Order Routes Integration Tests', () => {
       });
 
       const orderData = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: 'test@example.com',
         },
         address: '123 Main St, New York, NY 10001',

@@ -56,7 +56,7 @@ describe('OrderController Integration Tests', () => {
       // Create request
       mockRequest = {
         body: {
-          customer: {
+          paymentDetails: { creditCard: "4111111111111111" }, customer: {
             email: 'customer@example.com',
           },
           address: '456 Main St, New York, NY 10002',
@@ -137,7 +137,7 @@ describe('OrderController Integration Tests', () => {
 
       mockRequest = {
         body: {
-          customer: { email: 'test@example.com' },
+          paymentDetails: { creditCard: "4111111111111111" }, customer: { email: 'test@example.com' },
           address: '789 Broadway, New York, NY 10003',
           items: [{ productId: product.id, quantity: 1 }],
         },
@@ -184,7 +184,7 @@ describe('OrderController Integration Tests', () => {
       // Customer address closer to warehouse1
       mockRequest = {
         body: {
-          customer: { email: 'test@example.com' },
+          paymentDetails: { creditCard: "4111111111111111" }, customer: { email: 'test@example.com' },
           address: '123 Test St, New York, NY 10001', // Closer to warehouse1
           items: [{ productId: product.id, quantity: 1 }],
         },
@@ -237,7 +237,7 @@ describe('OrderController Integration Tests', () => {
 
       mockRequest = {
         body: {
-          customer: { email: 'test@example.com' },
+          paymentDetails: { creditCard: "4111111111111111" }, customer: { email: 'test@example.com' },
           address: '123 Test St, New York, NY 10001',
           items: [{ productId: product.id, quantity: 25 }],
         },
@@ -272,7 +272,7 @@ describe('OrderController Integration Tests', () => {
 
       mockRequest = {
         body: {
-          customer: { email: 'test@example.com' },
+          paymentDetails: { creditCard: "4111111111111111" }, customer: { email: 'test@example.com' },
           address: '123 Test St, New York, NY 10001',
           items: [{ productId: product.id, quantity: 1 }],
         },
@@ -302,7 +302,7 @@ describe('OrderController Integration Tests', () => {
 
       mockRequest = {
         body: {
-          customer: { email: 'test@example.com' },
+          paymentDetails: { creditCard: "4111111111111111" }, customer: { email: 'test@example.com' },
           address: '123 Test St, New York, NY 10001',
           items: [{ productId: fakeProductId, quantity: 1 }],
         },
@@ -328,7 +328,7 @@ describe('OrderController Integration Tests', () => {
 
       mockRequest = {
         body: {
-          customer: { email: 'test@example.com' },
+          paymentDetails: { creditCard: "4111111111111111" }, customer: { email: 'test@example.com' },
           address: '123 Test St, New York, NY 10001',
           items: [{ productId: product.id, quantity: 10 }], // Requesting 10
         },
@@ -366,7 +366,7 @@ describe('OrderController Integration Tests', () => {
 
       mockRequest = {
         body: {
-          customer: { email: 'test@example.com' },
+          paymentDetails: { creditCard: "4111111111111111" }, customer: { email: 'test@example.com' },
           address: '123 Test St, New York, NY 10001',
           items: [{ productId: product.id, quantity: 1 }],
         },
@@ -413,7 +413,7 @@ describe('OrderController Integration Tests', () => {
       // First order consumes the inventory
       const firstRequest = {
         body: {
-          customer: { email: 'first@example.com' },
+          paymentDetails: { creditCard: "4111111111111111" }, customer: { email: 'first@example.com' },
           address: '123 Test St, New York, NY 10001',
           items: [{ productId: product.id, quantity: 1 }],
         },
@@ -435,7 +435,7 @@ describe('OrderController Integration Tests', () => {
       // Second order should fail due to insufficient inventory
       mockRequest = {
         body: {
-          customer: { email: 'second@example.com' },
+          paymentDetails: { creditCard: "4111111111111111" }, customer: { email: 'second@example.com' },
           address: '123 Test St, New York, NY 10001',
           items: [{ productId: product.id, quantity: 1 }],
         },
@@ -473,7 +473,7 @@ describe('OrderController Integration Tests', () => {
 
       mockRequest = {
         body: {
-          customer: { email: 'test@example.com' },
+          paymentDetails: { creditCard: "4111111111111111" }, customer: { email: 'test@example.com' },
           address: '123 Test St, New York, NY 10001',
           items: [
             { productId: product1.id, quantity: 2 },

@@ -9,9 +9,10 @@ export class PaymentService implements IPaymentService {
    * Process a payment
    * @param _cardNumber The credit card number
    * @param amount The amount in cents
+   * @param _description Description of the payment (e.g. Order ID)
    * @returns Promise resolving to payment result
    */
-  async processPayment(_cardNumber: string, amount: number): Promise<PaymentResult> {
+  async processPayment(_cardNumber: string, amount: number, _description: string): Promise<PaymentResult> {
     // Mock implementation: return failure if amount is 9999 cents (test scenario)
     // In a real implementation, this would call a payment gateway API
     if (amount === 9999) {

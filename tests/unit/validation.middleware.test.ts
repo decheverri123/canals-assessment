@@ -32,7 +32,7 @@ describe("validateCreateOrder middleware", () => {
   describe("valid order request", () => {
     it("should pass validation and call next() when request is valid", () => {
       mockRequest.body = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: "test@example.com",
         },
         address: "123 Main St, New York, NY 10001",
@@ -55,7 +55,7 @@ describe("validateCreateOrder middleware", () => {
       expect(statusSpy).not.toHaveBeenCalled();
       expect(jsonSpy).not.toHaveBeenCalled();
       expect(mockRequest.body).toEqual({
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: "test@example.com",
         },
         address: "123 Main St, New York, NY 10001",
@@ -70,7 +70,7 @@ describe("validateCreateOrder middleware", () => {
 
     it("should pass validation with multiple items", () => {
       mockRequest.body = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: "customer@example.com",
         },
         address: "456 Oak Ave, Los Angeles, CA 90001",
@@ -104,7 +104,7 @@ describe("validateCreateOrder middleware", () => {
   describe("invalid email format", () => {
     it("should reject request with invalid email format", () => {
       mockRequest.body = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: "not-an-email",
         },
         address: "123 Main St",
@@ -137,7 +137,7 @@ describe("validateCreateOrder middleware", () => {
 
     it("should reject request with missing email", () => {
       mockRequest.body = {
-        customer: {},
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {},
         address: "123 Main St",
         items: [
           {
@@ -167,7 +167,7 @@ describe("validateCreateOrder middleware", () => {
 
     it("should reject request with email as empty string", () => {
       mockRequest.body = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: "",
         },
         address: "123 Main St",
@@ -222,7 +222,7 @@ describe("validateCreateOrder middleware", () => {
 
     it("should reject request with missing address", () => {
       mockRequest.body = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: "test@example.com",
         },
         items: [
@@ -253,7 +253,7 @@ describe("validateCreateOrder middleware", () => {
 
     it("should reject request with missing items array", () => {
       mockRequest.body = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: "test@example.com",
         },
         address: "123 Main St",
@@ -281,7 +281,7 @@ describe("validateCreateOrder middleware", () => {
   describe("invalid quantity", () => {
     it("should reject request with negative quantity", () => {
       mockRequest.body = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: "test@example.com",
         },
         address: "123 Main St",
@@ -314,7 +314,7 @@ describe("validateCreateOrder middleware", () => {
 
     it("should reject request with zero quantity", () => {
       mockRequest.body = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: "test@example.com",
         },
         address: "123 Main St",
@@ -347,7 +347,7 @@ describe("validateCreateOrder middleware", () => {
 
     it("should reject request with non-integer quantity", () => {
       mockRequest.body = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: "test@example.com",
         },
         address: "123 Main St",
@@ -380,7 +380,7 @@ describe("validateCreateOrder middleware", () => {
 
     it("should reject request with quantity as string", () => {
       mockRequest.body = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: "test@example.com",
         },
         address: "123 Main St",
@@ -406,7 +406,7 @@ describe("validateCreateOrder middleware", () => {
   describe("empty items array", () => {
     it("should reject request with empty items array", () => {
       mockRequest.body = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: "test@example.com",
         },
         address: "123 Main St",
@@ -436,7 +436,7 @@ describe("validateCreateOrder middleware", () => {
   describe("invalid product ID format", () => {
     it("should reject request with empty product ID", () => {
       mockRequest.body = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: "test@example.com",
         },
         address: "123 Main St",
@@ -469,7 +469,7 @@ describe("validateCreateOrder middleware", () => {
 
     it("should reject request with missing product ID", () => {
       mockRequest.body = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: "test@example.com",
         },
         address: "123 Main St",
@@ -502,7 +502,7 @@ describe("validateCreateOrder middleware", () => {
   describe("multiple validation errors", () => {
     it("should return all validation errors when multiple fields are invalid", () => {
       mockRequest.body = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: "invalid-email",
         },
         address: "",
@@ -570,7 +570,7 @@ describe("validateCreateOrder middleware", () => {
 
     it("should handle address with only whitespace", () => {
       mockRequest.body = {
-        customer: {
+        paymentDetails: { creditCard: "4111111111111111" }, customer: {
           email: "test@example.com",
         },
         address: "   ",

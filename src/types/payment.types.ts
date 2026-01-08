@@ -3,7 +3,7 @@
  */
 
 export interface IPaymentService {
-  processPayment(cardNumber: string, amount: number): Promise<PaymentResult>;
+  processPayment(cardNumber: string, amount: number, description: string): Promise<PaymentResult>;
 }
 
 export interface PaymentResult {

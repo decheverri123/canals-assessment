@@ -168,9 +168,10 @@ export class OrderController {
     });
 
     // Step 5: Process payment (after transaction commits)
-    // Use a mock card number for now (in real implementation, this would come from the request)
-    const cardNumber = '4111111111111111'; // Mock card number
-    const paymentResult = await this.paymentService.processPayment(cardNumber, totalAmount);
+    const { creditCard } = validatedData.paymentDetails;
+    const description = `Order ${order.id}`;
+    
+    const paymentResult = await this.paymentService.processPayment(creditCard, totalAmount, description);
 
     // Step 6: Update order status based on payment result
     if (!paymentResult.success) {
