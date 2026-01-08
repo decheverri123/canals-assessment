@@ -2,7 +2,7 @@
  * Centralized error handling middleware
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from "express";
 
 /**
  * Custom error class for business logic errors
@@ -14,7 +14,7 @@ export class BusinessError extends Error {
     public code?: string
   ) {
     super(message);
-    this.name = 'BusinessError';
+    this.name = "BusinessError";
     // Maintains proper stack trace for where our error was thrown (only available on V8)
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, BusinessError);
@@ -26,9 +26,9 @@ export class BusinessError extends Error {
  * Custom error for split shipment scenarios
  */
 export class SplitShipmentError extends BusinessError {
-  constructor(message: string = 'Split shipment not supported') {
-    super(message, 400, 'SPLIT_SHIPMENT_NOT_SUPPORTED');
-    this.name = 'SplitShipmentError';
+  constructor(message: string = "Split shipment not supported") {
+    super(message, 400, "SPLIT_SHIPMENT_NOT_SUPPORTED");
+    this.name = "SplitShipmentError";
   }
 }
 
@@ -49,7 +49,7 @@ export const asyncHandler = (
  */
 export const errorHandler = (
   err: Error | BusinessError,
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ): void => {
@@ -63,7 +63,7 @@ export const errorHandler = (
     res.status(err.statusCode).json({
       error: err.message,
       code: err.code,
-      ...(process.env.NODE_ENV !== 'production' && {
+      ...(process.env.NODE_ENV !== "production" && {
         stack: err.stack,
       }),
     });
@@ -71,10 +71,10 @@ export const errorHandler = (
   }
 
   // Handle Zod validation errors (shouldn't reach here if validation middleware works)
-  if (err.name === 'ZodError') {
+  if (err.name === "ZodError") {
     res.status(400).json({
-      error: 'Validation failed',
-      ...(process.env.NODE_ENV !== 'production' && {
+      error: "Validation failed",
+      ...(process.env.NODE_ENV !== "production" && {
         details: (err as any).errors,
       }),
     });
@@ -82,13 +82,13 @@ export const errorHandler = (
   }
 
   // Handle Prisma errors
-  if (err.name === 'PrismaClientKnownRequestError') {
+  if (err.name === "PrismaClientKnownRequestError") {
     const prismaError = err as any;
     // Handle unique constraint violations
-    if (prismaError.code === 'P2002') {
+    if (prismaError.code === "P2002") {
       res.status(409).json({
-        error: 'Resource already exists',
-        ...(process.env.NODE_ENV !== 'production' && {
+        error: "Resource already exists",
+        ...(process.env.NODE_ENV !== "production" && {
           code: prismaError.code,
           meta: prismaError.meta,
         }),
@@ -96,10 +96,10 @@ export const errorHandler = (
       return;
     }
     // Handle record not found
-    if (prismaError.code === 'P2025') {
+    if (prismaError.code === "P2025") {
       res.status(404).json({
-        error: 'Resource not found',
-        ...(process.env.NODE_ENV !== 'production' && {
+        error: "Resource not found",
+        ...(process.env.NODE_ENV !== "production" && {
           code: prismaError.code,
         }),
       });
@@ -110,10 +110,11 @@ export const errorHandler = (
   // Default error handler for unexpected errors
   const statusCode = (err as any).statusCode || 500;
   res.status(statusCode).json({
-    error: process.env.NODE_ENV === 'production' 
-      ? 'Internal server error' 
-      : err.message,
-    ...(process.env.NODE_ENV !== 'production' && {
+    error:
+      process.env.NODE_ENV === "production"
+        ? "Internal server error"
+        : err.message,
+    ...(process.env.NODE_ENV !== "production" && {
       stack: err.stack,
       name: err.name,
     }),

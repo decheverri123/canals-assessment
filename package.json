@@ -10,7 +10,9 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "test:order": "ts-node scripts/test-order.ts",
+    "test:order:simple": "./scripts/test-order-simple.sh"
   },
   "keywords": [],
   "author": "",

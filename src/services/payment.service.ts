@@ -7,11 +7,11 @@ import { IPaymentService, PaymentResult } from '../types/payment.types';
 export class PaymentService implements IPaymentService {
   /**
    * Process a payment
-   * @param cardNumber The credit card number
+   * @param _cardNumber The credit card number
    * @param amount The amount in cents
    * @returns Promise resolving to payment result
    */
-  async processPayment(cardNumber: string, amount: number): Promise<PaymentResult> {
+  async processPayment(_cardNumber: string, amount: number): Promise<PaymentResult> {
     // Mock implementation: return failure if amount is 9999 cents (test scenario)
     // In a real implementation, this would call a payment gateway API
     if (amount === 9999) {

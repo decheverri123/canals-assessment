@@ -7,10 +7,10 @@ import { IGeocodingService, GeocodeResult } from '../types/geocoding.types';
 export class GeocodingService implements IGeocodingService {
   /**
    * Geocode an address to latitude and longitude coordinates
-   * @param address The address to geocode
+   * @param _address The address to geocode
    * @returns Promise resolving to coordinates (mock: always returns NYC coordinates)
    */
-  async geocode(address: string): Promise<GeocodeResult> {
+  async geocode(_address: string): Promise<GeocodeResult> {
     // Mock implementation: return hardcoded NYC coordinates
     // In a real implementation, this would call a geocoding API
     return {
