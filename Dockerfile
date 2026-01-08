@@ -15,7 +15,8 @@ WORKDIR /app
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies
+# Install ALL dependencies (including devDependencies for build)
+ENV NODE_ENV=development
 RUN pnpm install --frozen-lockfile
 
 # Copy Prisma schema
@@ -27,11 +28,14 @@ RUN pnpm prisma:generate
 # Copy source code (includes docker-entrypoint.sh)
 COPY . .
 
-# Make entrypoint script executable
-RUN chmod +x /app/docker-entrypoint.sh
+# Fix line endings (Windows CRLF -> Unix LF) and make executable
+RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && chmod +x /app/docker-entrypoint.sh
 
 # Build TypeScript
 RUN pnpm build
+
+# Set production for runtime
+ENV NODE_ENV=production
 
 # Expose port
 EXPOSE 3000
