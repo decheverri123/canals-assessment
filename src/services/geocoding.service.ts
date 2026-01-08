@@ -14,6 +14,9 @@ export class GeocodingService implements IGeocodingService {
     // Mock implementation: return hardcoded NYC coordinates
     // In a real implementation, this would call a geocoding API
     return {
+      latitude: 40.7128,
+      longitude: -74.0060,
+      // Maintain backward compatibility with deprecated lat/lng
       lat: 40.7128,
       lng: -74.0060,
     };

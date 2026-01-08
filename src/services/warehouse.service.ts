@@ -1,6 +1,7 @@
 import { PrismaClient, Warehouse } from '@prisma/client';
 import { calculateHaversineDistance } from '../utils/haversine';
 import { BusinessError } from '../middlewares/error-handler.middleware';
+import { Coordinates } from '../types/coordinates.types';
 
 export interface OrderItemRequest {
   productId: string;
@@ -20,15 +21,13 @@ export class WarehouseService {
   /**
    * Find the closest warehouse that has sufficient inventory for all order items
    * @param orderItems Array of order items with productId and quantity
-   * @param customerLat Customer's latitude
-   * @param customerLng Customer's longitude
+   * @param customerCoordinates Customer's coordinates
    * @returns The closest warehouse with all items in stock
    * @throws Error if no single warehouse has all items in sufficient quantity
    */
   async findClosestWarehouse(
     orderItems: OrderItemRequest[],
-    customerLat: number,
-    customerLng: number
+    customerCoordinates: Coordinates
   ): Promise<Warehouse> {
     // Get all warehouses
     const warehouses = await this.prisma.warehouse.findMany({
@@ -63,10 +62,11 @@ export class WarehouseService {
     const warehousesWithDistance: WarehouseWithDistance[] = warehousesWithInventory.map(
       (warehouse) => {
         const distance = calculateHaversineDistance(
-          customerLat,
-          customerLng,
-          warehouse.latitude,
-          warehouse.longitude
+          customerCoordinates,
+          {
+            latitude: warehouse.latitude,
+            longitude: warehouse.longitude,
+          }
         );
 
         return {
