@@ -44,8 +44,10 @@ export class OrderController {
     // Step 2: Find closest warehouse with all items
     const warehouse = await this.warehouseService.findClosestWarehouse(
       validatedData.items,
-      coordinates.lat,
-      coordinates.lng
+      {
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+      }
     );
 
     // Step 3: Fetch products and calculate total amount
