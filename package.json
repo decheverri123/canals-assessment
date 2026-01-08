@@ -11,17 +11,13 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:studio": "prisma studio",
-    "test:order": "ts-node scripts/test-order.ts",
-    "test:order:simple": "./scripts/test-order-simple.sh",
-    "test:setup": "ts-node scripts/setup-test-data.ts",
-    "test:perfect-order": "ts-node scripts/test-perfect-order.ts",
-    "test:multi-item": "ts-node scripts/test-multi-item-bundle.ts",
-    "test:phase1": "pnpm test:setup && pnpm test:perfect-order && pnpm test:multi-item",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "test:setup-phase2": "ts-node scripts/setup-phase2-test-data.ts",
     "test:distance-tiebreaker": "ts-node scripts/test-distance-tiebreaker.ts",
     "test:no-split": "ts-node scripts/test-no-split-shipments.ts",
-    "test:partial-stock": "ts-node scripts/test-partial-stock.ts",
-    "test:phase2": "pnpm test:setup-phase2 && pnpm test:distance-tiebreaker && pnpm test:no-split && pnpm test:partial-stock"
+    "test:partial-stock": "ts-node scripts/test-partial-stock.ts"
   },
   "keywords": [],
   "author": "",
@@ -36,8 +32,11 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
+    "@types/jest": "^29.5.12",
     "@types/node": "^22.7.5",
+    "jest": "^29.7.0",
     "prisma": "^5.19.0",
+    "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.6.3"
