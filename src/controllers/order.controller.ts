@@ -195,7 +195,7 @@ export class OrderController {
       },
     });
 
-    // Step 7: Return order with items
+    // Step 7: Return order with items and warehouse information
     const response: OrderResponse = {
       id: updatedOrder.id,
       customerEmail: updatedOrder.customerEmail,
@@ -203,6 +203,11 @@ export class OrderController {
       totalAmount: updatedOrder.totalAmount,
       status: updatedOrder.status,
       createdAt: updatedOrder.createdAt,
+      warehouse: {
+        id: warehouse.id,
+        name: warehouse.name,
+        address: warehouse.address,
+      },
       orderItems: updatedOrder.orderItems.map((item) => ({
         id: item.id,
         productId: item.productId,

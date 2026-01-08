@@ -87,6 +87,12 @@ describe('OrderController Integration Tests', () => {
         status: OrderStatus.PAID,
       });
       expect(responseCall.id).toBeDefined();
+      expect(responseCall.warehouse).toBeDefined();
+      expect(responseCall.warehouse).toMatchObject({
+        id: warehouse.id,
+        name: warehouse.name,
+        address: warehouse.address,
+      });
       expect(responseCall.orderItems).toHaveLength(1);
       expect(responseCall.orderItems[0]).toMatchObject({
         productId: product.id,

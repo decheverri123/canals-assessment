@@ -648,6 +648,10 @@ describe('Order Routes Integration Tests', () => {
       expect(response.body).toHaveProperty('totalAmount');
       expect(response.body).toHaveProperty('status');
       expect(response.body).toHaveProperty('createdAt');
+      expect(response.body).toHaveProperty('warehouse');
+      expect(response.body.warehouse).toHaveProperty('id');
+      expect(response.body.warehouse).toHaveProperty('name');
+      expect(response.body.warehouse).toHaveProperty('address');
       expect(response.body).toHaveProperty('orderItems');
       expect(response.body.orderItems).toBeInstanceOf(Array);
     });

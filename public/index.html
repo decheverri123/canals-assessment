@@ -668,6 +668,14 @@
                 data.status
               }</span></p>
               <p><strong>Created At:</strong> ${formatDate(data.createdAt)}</p>
+              ${data.warehouse ? `
+              <div style="margin-top: 20px; padding: 15px; background: #e8f4f8; border-radius: 6px; border-left: 4px solid #667eea;">
+                <h3 style="margin-top: 0; margin-bottom: 10px; color: #333;">📦 Fulfilled By Warehouse:</h3>
+                <p style="margin: 5px 0;"><strong>Name:</strong> ${data.warehouse.name}</p>
+                <p style="margin: 5px 0;"><strong>Address:</strong> ${data.warehouse.address}</p>
+                <p style="margin: 5px 0; font-size: 0.85rem; color: #666;"><strong>Warehouse ID:</strong> ${data.warehouse.id}</p>
+              </div>
+              ` : ''}
               <h3 style="margin-top: 20px; margin-bottom: 10px;">Order Items:</h3>
               <ul>
                 ${data.orderItems
