@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Product {
+  id        String      @id @default(uuid())
+  name      String
+  price     Decimal     @db.Decimal(10, 2)
+  inventory Inventory[]
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+model Warehouse {
+  id        String      @id @default(uuid())
+  name      String
+  latitude  Decimal     @db.Decimal(10, 8)
+  longitude Decimal     @db.Decimal(11, 8)
+  inventory Inventory[]
+  orders    Order[]
+
+  @@map("warehouses")
+}
+
+model Inventory {
+  warehouseId String
+  productId   String
+  quantity    Int
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([warehouseId, productId])
+  @@map("inventory")
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  customerName    String
+  shippingAddress String
+  latitude        Decimal?    @db.Decimal(10, 8)
+  longitude       Decimal?    @db.Decimal(11, 8)
+  totalAmount     Decimal     @db.Decimal(10, 2)
+  warehouseId     String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  warehouse Warehouse   @relation(fields: [warehouseId], references: [id])
+  items     OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  productId   String
+  quantity    Int
+  priceAtSale Decimal  @db.Decimal(10, 2)
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}

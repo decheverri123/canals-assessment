@@ -7,7 +7,7 @@ todos:
     status: pending
   - id: "2"
     content: Set up Prisma schema (prisma/schema.prisma) with prisma 7 and all models and relations
-    status: pending
+    status: completed
   - id: "3"
     content: Create database utilities (src/db/prisma.ts) with Prisma client singleton
     status: pending
