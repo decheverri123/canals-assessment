@@ -35,6 +35,7 @@ services:
     volumes:
       - ./prisma:/app/prisma
     restart: unless-stopped
+    command: ["pnpm", "start"]
 
 volumes:
   postgres_data:

@@ -10,6 +10,15 @@ import { OrderStatus } from '@prisma/client';
 export { OrderStatus };
 
 /**
+ * Warehouse information in order response
+ */
+export interface WarehouseResponse {
+  id: string;
+  name: string;
+  address: string;
+}
+
+/**
  * Order response type with order items
  */
 export interface OrderResponse {
@@ -19,6 +28,7 @@ export interface OrderResponse {
   totalAmount: number;
   status: OrderStatus;
   createdAt: Date;
+  warehouse: WarehouseResponse;
   orderItems: OrderItemResponse[];
 }
 

@@ -44,8 +44,10 @@ export class OrderController {
     // Step 2: Find closest warehouse with all items
     const warehouse = await this.warehouseService.findClosestWarehouse(
       validatedData.items,
-      coordinates.lat,
-      coordinates.lng
+      {
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+      }
     );
 
     // Step 3: Fetch products and calculate total amount
@@ -166,9 +168,10 @@ export class OrderController {
     });
 
     // Step 5: Process payment (after transaction commits)
-    // Use a mock card number for now (in real implementation, this would come from the request)
-    const cardNumber = '4111111111111111'; // Mock card number
-    const paymentResult = await this.paymentService.processPayment(cardNumber, totalAmount);
+    const { creditCard } = validatedData.paymentDetails;
+    const description = `Order ${order.id}`;
+    
+    const paymentResult = await this.paymentService.processPayment(creditCard, totalAmount, description);
 
     // Step 6: Update order status based on payment result
     if (!paymentResult.success) {
@@ -193,7 +196,7 @@ export class OrderController {
       },
     });
 
-    // Step 7: Return order with items
+    // Step 7: Return order with items and warehouse information
     const response: OrderResponse = {
       id: updatedOrder.id,
       customerEmail: updatedOrder.customerEmail,
@@ -201,6 +204,11 @@ export class OrderController {
       totalAmount: updatedOrder.totalAmount,
       status: updatedOrder.status,
       createdAt: updatedOrder.createdAt,
+      warehouse: {
+        id: warehouse.id,
+        name: warehouse.name,
+        address: warehouse.address,
+      },
       orderItems: updatedOrder.orderItems.map((item) => ({
         id: item.id,
         productId: item.productId,

@@ -13,6 +13,9 @@ export const createOrderSchema = z.object({
     email: z.string().email('Invalid email address'),
   }),
   address: z.string().min(1, 'Address is required'),
+  paymentDetails: z.object({
+    creditCard: z.string().min(16, 'Invalid credit card number').max(19, 'Invalid credit card number'),
+  }),
   items: z
     .array(
       z.object({

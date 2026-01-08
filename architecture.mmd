@@ -1,0 +1,47 @@
+graph TD
+    Client[Client / API Consumer]
+    
+    subgraph "Application Layer (Express)"
+        App[src/app.ts]
+        Router[src/routes/order.routes.ts]
+        Middleware[Validation Middleware]
+        ErrHandler[Error Handler]
+    end
+
+    subgraph "Controller Layer"
+        OrderCtrl[OrderController]
+    end
+
+    subgraph "Service Layer"
+        GeoSvc[GeocodingService]
+        PaySvc[PaymentService]
+        WarehouseSvc[WarehouseService]
+    end
+    
+    subgraph "Data Layer"
+        Prisma[Prisma Client]
+        DB[(PostgreSQL Database)]
+    end
+    
+    subgraph "Utilities"
+        Haversine[Haversine Formula]
+    end
+
+    Client -->|HTTP Request| App
+    App --> Middleware
+    Middleware --> Router
+    Router --> OrderCtrl
+    
+    OrderCtrl -->|1. Get Coords| GeoSvc
+    OrderCtrl -->|2. Find Warehouse| WarehouseSvc
+    WarehouseSvc -->|Check Inventory| Prisma
+    WarehouseSvc -->|Calc Distance| Haversine
+    
+    OrderCtrl -->|3. Transaction| Prisma
+    Prisma -->|Read/Write| DB
+    
+    OrderCtrl -->|4. Process Payment| PaySvc
+    
+    OrderCtrl -.->|Error| ErrHandler
+    ErrHandler -.->|Response| Client
+    OrderCtrl -.->|Success Response| Client
