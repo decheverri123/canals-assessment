@@ -4,7 +4,7 @@ overview: Build a production-quality Express.js + TypeScript backend with Prisma
 todos:
   - id: "1"
     content: Create project configuration files (package.json, tsconfig.json, .env.example, .gitignore)
-    status: pending
+    status: completed
   - id: "2"
     content: Set up Prisma schema (prisma/schema.prisma) with prisma 7 and all models and relations
     status: completed
