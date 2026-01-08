@@ -1,0 +1,104 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Order {
+  id                   String      @id @default(cuid())
+  customerId           String
+  shippingStreet       String
+  shippingCity         String
+  shippingState        String
+  shippingZipCode      String
+  shippingCountry      String
+  shippingLatitude     Float?
+  shippingLongitude    Float?
+  warehouseId          String
+  totalAmount          Float
+  paymentConfirmation  String
+  status               OrderStatus @default(PENDING)
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  warehouse            Warehouse   @relation(fields: [warehouseId], references: [id])
+  items                OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Float
+
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Warehouse {
+  id        String @id @default(cuid())
+  name      String
+  street    String
+  city      String
+  state     String
+  zipCode   String
+  country   String
+  latitude  Float?
+  longitude Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders    Order[]
+  inventory InventoryItem[]
+
+  @@map("warehouses")
+}
+
+model Product {
+  id          String @id @default(cuid())
+  name        String
+  description String
+  price       Float
+  sku         String @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems  OrderItem[]
+  inventory   InventoryItem[]
+
+  @@map("products")
+}
+
+model InventoryItem {
+  id          String @id @default(cuid())
+  warehouseId String
+  productId   String
+  quantity    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  product     Product   @relation(fields: [productId], references: [id])
+
+  @@unique([warehouseId, productId])
+  @@map("inventory_items")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}

@@ -1,182 +1,157 @@
 # Order Management API
 
-A backend service for managing e-commerce orders with automatic warehouse selection and payment processing.
+A backend service for order management functionality in an e-commerce platform. The system handles order creation, warehouse selection, inventory management, and integrates with external geocoding and payment services.
 
-## Technology Stack
+## Features
 
-- **Runtime**: Node.js 18+ with TypeScript
-- **Framework**: Express.js
-- **Database**: PostgreSQL 16
-- **ORM**: Prisma
-- **Testing**: Jest + fast-check (property-based testing)
-- **Package Manager**: pnpm
-- **Containerization**: Docker & Docker Compose
+- RESTful API for order management
+- Automatic warehouse selection based on inventory and proximity
+- Integration with geocoding and payment services
+- PostgreSQL database with Prisma ORM
+- Docker containerization for easy deployment
+- Comprehensive testing with Jest and property-based testing
 
 ## Prerequisites
 
-- Node.js 18 or higher
-- pnpm 8 or higher
-- Docker and Docker Compose (for local development)
-- PostgreSQL 16 (if running without Docker)
+- Node.js 18+ 
+- Docker and Docker Compose
+- PostgreSQL (if running without Docker)
 
-## Setup Instructions
+## Quick Start with Docker
 
-### 1. Install Dependencies
+1. **Clone and setup**
+   ```bash
+   git clone <repository-url>
+   cd order-management-api
+   cp .env.example .env
+   ```
 
-```bash
-pnpm install
-```
+2. **Start services**
+   ```bash
+   docker-compose up -d
+   ```
 
-### 2. Environment Configuration
+3. **Run database migrations**
+   ```bash
+   docker-compose exec app npx prisma migrate dev
+   ```
 
-Create a `.env` file in the root directory:
+4. **Seed database (optional)**
+   ```bash
+   docker-compose exec app npm run prisma:seed
+   ```
 
-```bash
-cp .env.example .env
-```
+5. **Access the API**
+   - API: http://localhost:3000
+   - Health check: http://localhost:3000/health
 
-Update the `DATABASE_URL` in `.env` if needed.
+## Development Setup
 
-### 3. Database Setup
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-#### Option A: Using Docker Compose (Recommended)
+2. **Start PostgreSQL**
+   ```bash
+   docker-compose up postgres -d
+   ```
 
-```bash
-# Start PostgreSQL database
-docker-compose up -d postgres
+3. **Setup database**
+   ```bash
+   npx prisma migrate dev
+   npx prisma generate
+   ```
 
-# Run migrations
-pnpm prisma:migrate
-
-# Seed the database
-pnpm prisma:seed
-```
-
-#### Option B: Using Local PostgreSQL
-
-1. Ensure PostgreSQL is running locally
-2. Update `DATABASE_URL` in `.env`
-3. Run migrations: `pnpm prisma:migrate`
-4. Seed the database: `pnpm prisma:seed`
-
-### 4. Generate Prisma Client
-
-```bash
-pnpm prisma:generate
-```
-
-### 5. Start Development Server
-
-```bash
-pnpm dev
-```
-
-The server will start on `http://localhost:3000`
+4. **Start development server**
+   ```bash
+   npm run dev
+   ```
 
 ## Available Scripts
 
-- `pnpm dev` - Start development server with hot reload
-- `pnpm build` - Build TypeScript to JavaScript
-- `pnpm start` - Start production server
-- `pnpm test` - Run tests
-- `pnpm test:watch` - Run tests in watch mode
-- `pnpm test:coverage` - Generate test coverage report
-- `pnpm prisma:generate` - Generate Prisma Client
-- `pnpm prisma:migrate` - Run database migrations
-- `pnpm prisma:studio` - Open Prisma Studio
-- `pnpm prisma:seed` - Seed the database
-- `pnpm lint` - Run ESLint
-- `pnpm lint:fix` - Fix ESLint errors
+- `npm run dev` - Start development server with hot reload
+- `npm run build` - Build for production
+- `npm start` - Start production server
+- `npm test` - Run tests
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:coverage` - Run tests with coverage
+- `npm run prisma:generate` - Generate Prisma client
+- `npm run prisma:migrate` - Run database migrations
+- `npm run prisma:seed` - Seed database with sample data
 
-## Docker Setup
+## Docker Commands
 
-### Build and Run with Docker Compose
+- `npm run docker:up` - Start all services
+- `npm run docker:down` - Stop all services
+- `docker-compose up app-dev` - Start in development mode
 
-```bash
-# Build and start all services
-docker-compose up --build
+## API Endpoints
 
-# Run in detached mode
-docker-compose up -d
+### Orders
+- `POST /api/orders` - Create a new order
+- `GET /api/orders/:id` - Get order by ID
 
-# View logs
-docker-compose logs -f app
-
-# Stop services
-docker-compose down
-```
+### Health
+- `GET /health` - Health check endpoint
 
 ## Project Structure
 
 ```
-canals-assessment/
-├── src/
-│   ├── entry/              # Application entry point
-│   ├── api/                 # Presentation layer (HTTP)
-│   │   ├── controllers/
-│   │   ├── routes/
-│   │   └── middleware/
-│   ├── services/            # Business logic layer
-│   ├── repositories/        # Data access layer
-│   ├── models/              # Data models/types
-│   ├── infrastructure/      # IO/External services
-│   └── utils/               # Shared utilities
-├── prisma/
-│   ├── schema.prisma
-│   ├── migrations/
-│   └── seed.ts
-├── tests/
-│   ├── unit/
-│   └── property/
-└── docker-compose.yml
+src/
+├── controllers/     # HTTP request handlers
+├── services/        # Business logic
+├── repositories/    # Data access layer
+├── models/          # TypeScript interfaces
+├── middleware/      # Express middleware
+└── test/           # Test utilities and setup
+
+prisma/
+├── schema.prisma   # Database schema
+└── migrations/     # Database migrations
 ```
 
-## API Endpoints
+## Environment Variables
 
-### Health Check
+Copy `.env.example` to `.env` and configure:
 
-```
-GET /health
-```
-
-Returns server health status.
-
-### Create Order
-
-```
-POST /orders
-```
-
-Creates a new order with automatic warehouse selection and payment processing.
-
-## Architecture
-
-The project follows a modular architecture with strict separation of concerns:
-
-- **Presentation Layer** (`api/`): HTTP controllers, routes, and middleware
-- **Business Logic Layer** (`services/`): Core business logic and orchestration
-- **Data Access Layer** (`repositories/`): Database operations
-- **Infrastructure Layer** (`infrastructure/`): External service integrations
-- **Models** (`models/`): TypeScript types and DTOs
-- **Utilities** (`utils/`): Shared helper functions
+- `DATABASE_URL` - PostgreSQL connection string
+- `PORT` - Server port (default: 3000)
+- `NODE_ENV` - Environment (development/production)
+- `GEOCODING_API_URL` - Geocoding service endpoint
+- `PAYMENT_API_URL` - Payment service endpoint
 
 ## Testing
 
-Run unit tests:
+The project uses Jest for unit testing and fast-check for property-based testing:
+
 ```bash
-pnpm test
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run with coverage
+npm run test:coverage
 ```
 
-Run property-based tests:
-```bash
-pnpm test
-```
+## Database
 
-Generate coverage report:
-```bash
-pnpm test:coverage
-```
+The application uses PostgreSQL with Prisma ORM. The database schema includes:
+
+- Orders and order items
+- Warehouses and inventory
+- Products
+- Automatic timestamps and relationships
+
+## Contributing
+
+1. Follow TypeScript best practices
+2. Write tests for new functionality
+3. Use conventional commit messages
+4. Ensure all tests pass before submitting
 
 ## License
 
-ISC
+MIT
