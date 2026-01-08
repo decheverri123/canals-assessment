@@ -1,8 +1,13 @@
-# Use Node.js LTS as base image
-FROM node:20-alpine AS base
+# Use Node.js LTS full image (better Prisma compatibility than slim)
+FROM node:20 AS base
 
-# Install pnpm
-RUN npm install -g pnpm
+# Install pnpm and postgresql-client
+# Full node image includes OpenSSL libraries needed by Prisma
+RUN npm install -g pnpm && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
@@ -19,8 +24,11 @@ COPY prisma ./prisma
 # Generate Prisma client
 RUN pnpm prisma:generate
 
-# Copy source code
+# Copy source code (includes docker-entrypoint.sh)
 COPY . .
+
+# Make entrypoint script executable
+RUN chmod +x /app/docker-entrypoint.sh
 
 # Build TypeScript
 RUN pnpm build
@@ -28,5 +36,6 @@ RUN pnpm build
 # Expose port
 EXPOSE 3000
 
-# Start server (migrations should be run separately before starting)
+# Use entrypoint to handle migrations and seeding
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["pnpm", "start"]

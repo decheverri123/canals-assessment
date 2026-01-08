@@ -8,32 +8,61 @@ Order Management System with Express, Prisma, and PostgreSQL.
 - pnpm
 - Docker and Docker Compose
 
+## Quick Start (Single Command)
+
+**For interviewers and quick setup:**
+
+```bash
+docker-compose up
+```
+
+That's it! The setup will automatically:
+- Start PostgreSQL database
+- Wait for database to be ready
+- Run database migrations (or push schema if no migrations exist)
+- Seed the database with initial data
+- Start the application server
+
+The API will be available at `http://localhost:3000`
+The web interface will be available at `http://localhost:3000` (serves `public/index.html`)
+
+**To run in detached mode:**
+```bash
+docker-compose up -d
+```
+
+**To view logs:**
+```bash
+docker-compose logs -f app
+```
+
 ## Setup Instructions
 
 ### Option 1: Run Everything with Docker (Recommended)
 
-1. **Start PostgreSQL and the app:**
-   ```bash
-   docker-compose up -d
-   ```
+The Docker setup now handles everything automatically. Just run:
 
-2. **Run database migrations:**
-   ```bash
-   docker-compose exec app pnpm prisma migrate deploy
-   ```
+```bash
+docker-compose up
+```
 
-3. **Seed the database:**
-   ```bash
-   docker-compose exec app pnpm prisma:seed
-   ```
+The entrypoint script will:
+1. Wait for the database to be ready
+2. Deploy migrations (or push schema if migrations don't exist)
+3. Seed the database with initial test data
+4. Start the application
 
-4. **View logs:**
-   ```bash
-   docker-compose logs -f app
-   ```
+**Manual steps (if needed):**
 
-The API will be available at `http://localhost:3000`
-The web interface will be available at `http://localhost:3000` (serves `public/index.html`)
+If you need to manually run migrations or seed:
+
+```bash
+# Run migrations manually
+docker-compose exec app pnpm prisma migrate deploy
+
+# Seed database manually
+docker-compose exec app pnpm prisma:seed
+```
 
 ### Option 2: Run PostgreSQL in Docker, App Locally
 
