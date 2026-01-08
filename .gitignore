@@ -53,3 +53,7 @@ prisma/migrations/
 
 # Docker
 .dockerignore
+INTERVIEW_CHEAT_SHEET.md
+.kiro/specs/order-management-api/design.md
+.kiro/specs/order-management-api/requirements.md
+.kiro/specs/order-management-api/tasks.md
