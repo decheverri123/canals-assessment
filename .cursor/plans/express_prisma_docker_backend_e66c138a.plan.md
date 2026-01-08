@@ -4,13 +4,13 @@ overview: Build a production-quality Express.js + TypeScript backend with Prisma
 todos:
   - id: "1"
     content: Create project configuration files (package.json, tsconfig.json, .env.example, .gitignore)
-    status: pending
+    status: completed
   - id: "2"
     content: Set up Prisma schema (prisma/schema.prisma) with prisma 7 and all models and relations
-    status: pending
+    status: completed
   - id: "3"
     content: Create database utilities (src/db/prisma.ts) with Prisma client singleton
-    status: pending
+    status: completed
   - id: "4"
     content: Implement distance utility (src/utils/distance.ts) with Haversine formula
     status: pending
