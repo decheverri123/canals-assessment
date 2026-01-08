@@ -53,6 +53,75 @@ This will:
 2. Run the Perfect Order test
 3. Run the Multi-Item Bundle test
 
+## Phase 2 Test Scripts (Warehouse Selection Logic)
+
+These scripts test the warehouse selection algorithm and business rules.
+
+### Setup Script
+
+**`setup-phase2-test-data.ts`** - Prepares test data for Phase 2 tests:
+- Creates warehouses in NY, San Francisco, and Denver
+- Sets up products for distance tie-breaker test
+- Configures inventory for split shipment test
+- Sets up partial stock scenario
+
+**Usage:**
+```bash
+pnpm test:setup-phase2
+# or
+pnpm ts-node scripts/setup-phase2-test-data.ts
+```
+
+### Test Scripts
+
+**`test-distance-tiebreaker.ts`** - Tests Distance Tie-Breaker scenario:
+- Customer in Austin, TX
+- All three warehouses have the items
+- Verifies: System selects Denver (closest to Austin)
+
+**Usage:**
+```bash
+pnpm test:distance-tiebreaker
+# or
+pnpm ts-node scripts/test-distance-tiebreaker.ts
+```
+
+**`test-no-split-shipments.ts`** - Tests No Split Shipments rule:
+- Item X only in Warehouse A
+- Item Y only in Warehouse B
+- Verifies: Order fails with 400 and clear error message
+
+**Usage:**
+```bash
+pnpm test:no-split
+# or
+pnpm ts-node scripts/test-no-split-shipments.ts
+```
+
+**`test-partial-stock.ts`** - Tests Partial Stock Rejection scenario:
+- Closest warehouse has only 4 units
+- Further warehouse has 10 units
+- Order for 5 units
+- Verifies: Success, filled by further warehouse
+
+**Usage:**
+```bash
+pnpm test:partial-stock
+# or
+pnpm ts-node scripts/test-partial-stock.ts
+```
+
+**Run all Phase 2 tests:**
+```bash
+pnpm test:phase2
+```
+
+This will:
+1. Setup Phase 2 test data
+2. Run the Distance Tie-Breaker test
+3. Run the No Split Shipments test
+4. Run the Partial Stock test
+
 ## Available Scripts
 
 ### 1. `test-order.ts` (Recommended)

@@ -1,5 +1,6 @@
 import { PrismaClient, Warehouse } from '@prisma/client';
 import { calculateHaversineDistance } from '../utils/haversine';
+import { BusinessError } from '../middlewares/error-handler.middleware';
 
 export interface OrderItemRequest {
   productId: string;
@@ -51,8 +52,10 @@ export class WarehouseService {
     });
 
     if (warehousesWithInventory.length === 0) {
-      throw new Error(
-        'No single warehouse has all items in sufficient quantity. Split shipments are not supported.'
+      throw new BusinessError(
+        'No single warehouse has all items in sufficient quantity. Split shipments are not supported.',
+        400,
+        'SPLIT_SHIPMENT_NOT_SUPPORTED'
       );
     }
 

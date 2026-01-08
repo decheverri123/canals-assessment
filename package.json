@@ -16,7 +16,12 @@
     "test:setup": "ts-node scripts/setup-test-data.ts",
     "test:perfect-order": "ts-node scripts/test-perfect-order.ts",
     "test:multi-item": "ts-node scripts/test-multi-item-bundle.ts",
-    "test:phase1": "pnpm test:setup && pnpm test:perfect-order && pnpm test:multi-item"
+    "test:phase1": "pnpm test:setup && pnpm test:perfect-order && pnpm test:multi-item",
+    "test:setup-phase2": "ts-node scripts/setup-phase2-test-data.ts",
+    "test:distance-tiebreaker": "ts-node scripts/test-distance-tiebreaker.ts",
+    "test:no-split": "ts-node scripts/test-no-split-shipments.ts",
+    "test:partial-stock": "ts-node scripts/test-partial-stock.ts",
+    "test:phase2": "pnpm test:setup-phase2 && pnpm test:distance-tiebreaker && pnpm test:no-split && pnpm test:partial-stock"
   },
   "keywords": [],
   "author": "",
