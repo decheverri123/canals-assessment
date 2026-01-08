@@ -25,11 +25,8 @@ COPY . .
 # Build TypeScript
 RUN pnpm build
 
-# Run migrations
-RUN pnpm prisma migrate deploy
-
 # Expose port
 EXPOSE 3000
 
-# Start server
+# Start server (migrations should be run separately before starting)
 CMD ["pnpm", "start"]
