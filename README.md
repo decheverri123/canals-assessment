@@ -176,8 +176,6 @@ Creates a new order, validates stock, and processes payment.
     }
     ```
 
-For more detailed `curl` examples, see [API_COMMANDS.md](./API_COMMANDS.md).
-
 ---
 
 ## 🧪 Testing

@@ -10,8 +10,18 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Starting seed...');
 
-  // Clear existing data (optional, for idempotency)
-  console.log('Clearing existing data...');
+  // Check if data already exists
+  const existingProducts = await prisma.product.count();
+  const existingWarehouses = await prisma.warehouse.count();
+  
+  if (existingProducts > 0 || existingWarehouses > 0) {
+    console.log(`Found existing data: ${existingProducts} products, ${existingWarehouses} warehouses`);
+    console.log('Clearing existing data for fresh seed...');
+  } else {
+    console.log('No existing data found. Creating fresh seed...');
+  }
+
+  // Clear existing data (for idempotency)
   await prisma.inventory.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
@@ -209,6 +219,7 @@ async function main() {
 main()
   .catch((e) => {
     console.error('Error during seed:', e);
+    console.error('Stack trace:', e instanceof Error ? e.stack : 'No stack trace available');
     process.exit(1);
   })
   .finally(async () => {

@@ -31,7 +31,20 @@ echo "Generating Prisma client..."
 pnpm prisma:generate
 
 echo "Seeding database..."
-pnpm prisma:seed || echo "Seed completed or skipped"
+# Run seed - if it fails, log but don't stop container startup
+# The seed script is idempotent and will clear/recreate data
+set +e  # Temporarily disable exit on error for seed
+pnpm prisma:seed
+SEED_EXIT_CODE=$?
+set -e  # Re-enable exit on error
+
+if [ $SEED_EXIT_CODE -eq 0 ]; then
+  echo "✓ Database seeded successfully"
+else
+  echo "⚠ Warning: Seed command exited with code $SEED_EXIT_CODE"
+  echo "The application will still start. You can manually seed later with:"
+  echo "  docker exec canals-app pnpm prisma db seed"
+fi
 
 echo "Starting application..."
 exec "$@"
