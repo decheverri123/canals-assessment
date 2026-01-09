@@ -523,6 +523,8 @@ describe('Order Routes Integration Tests', () => {
 
       expect(response.body).toHaveProperty('error');
       expect(response.body.error).toBe('Payment processing failed');
+<<<<<<< HEAD
+=======
 
       // Verify order was created and marked as FAILED
       const orders = await testPrisma.order.findMany({
@@ -541,6 +543,7 @@ describe('Order Routes Integration Tests', () => {
         },
       });
       expect(inventory?.quantity).toBe(10); // Restored to original quantity
+>>>>>>> origin/main
     });
   });
 
