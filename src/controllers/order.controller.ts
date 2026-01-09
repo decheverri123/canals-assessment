@@ -31,9 +31,11 @@ export class OrderController {
    * 1. Geocode shipping address
    * 2. Find closest warehouse with all items
    * 3. Calculate total amount
-   * 4. Create order and order items in a transaction
+   * 4. Create order and order items in a transaction (deducts inventory)
    * 5. Process payment
-   * 6. Update order status based on payment result
+   * 6. Update order status based on payment result:
+   *    - If payment succeeds: mark order as PAID
+   *    - If payment fails: restore inventory and mark order as FAILED
    */
   async createOrder(req: Request, res: Response): Promise<void> {
     const validatedData: CreateOrderRequest = req.body;
@@ -175,7 +177,38 @@ export class OrderController {
 
     // Step 6: Update order status based on payment result
     if (!paymentResult.success) {
-      // Payment failed - order remains PENDING
+      // Payment failed - restore inventory and mark order as FAILED
+      await this.prisma.$transaction(async (tx) => {
+        // Restore inventory quantities
+        await Promise.all(
+          validatedData.items.map((item) =>
+            tx.inventory.update({
+              where: {
+                warehouseId_productId: {
+                  warehouseId: warehouse.id,
+                  productId: item.productId,
+                },
+              },
+              data: {
+                quantity: {
+                  increment: item.quantity,
+                },
+              },
+            })
+          )
+        );
+
+        // Mark order as FAILED
+        await tx.order.update({
+          where: {
+            id: order.id,
+          },
+          data: {
+            status: OrderStatus.FAILED,
+          },
+        });
+      });
+
       throw new BusinessError('Payment processing failed', 402, 'PAYMENT_FAILED');
     }
 
