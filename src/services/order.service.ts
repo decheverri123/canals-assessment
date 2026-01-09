@@ -121,6 +121,17 @@ export class OrderService {
   private async validateAndFetchProducts(
     items: CreateOrderRequest["items"]
   ): Promise<Product[]> {
+    // Validate quantity is a positive integer for each item
+    for (const item of items) {
+      if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
+        throw new BusinessError(
+          `Quantity for product ${item.productId} must be a positive integer`,
+          400,
+          "INVALID_QUANTITY"
+        );
+      }
+    }
+
     const productIds = items.map((item) => item.productId);
     const products = await this.prisma.product.findMany({
       where: {
@@ -207,7 +218,11 @@ export class OrderService {
       );
 
       // Validate inventory availability
-      this.validateInventoryInTransaction(validatedData.items, inventoryChecks, warehouse.id);
+      this.validateInventoryInTransaction(
+        validatedData.items,
+        inventoryChecks,
+        warehouse.id
+      );
 
       // Deduct inventory quantities
       await Promise.all(
@@ -313,4 +328,3 @@ export class OrderService {
     }
   }
 }
-

@@ -3,39 +3,39 @@
  * Tests HTTP endpoints and middleware integration
  */
 
-import request from 'supertest';
-import { createApp } from '../../src/app';
-import { testPrisma } from '../setup';
+import request from "supertest";
+import { createApp } from "../../src/app";
+import { testPrisma } from "../setup";
 import {
   createTestProduct,
   createTestWarehouse,
   createTestInventory,
-} from '../helpers/test-helpers';
-import { OrderStatus } from '@prisma/client';
+} from "../helpers/test-helpers";
+import { OrderStatus } from "@prisma/client";
 
-describe('Order Routes Integration Tests', () => {
+describe("Order Routes Integration Tests", () => {
   let app: ReturnType<typeof createApp>;
 
   beforeEach(() => {
     app = createApp();
   });
 
-  describe('GET /products', () => {
-    it('should return all products sorted by SKU', async () => {
+  describe("GET /products", () => {
+    it("should return all products sorted by SKU", async () => {
       // Create test products
       const product1 = await createTestProduct({
-        sku: 'PROD-002',
-        name: 'Product B',
+        sku: "PROD-002",
+        name: "Product B",
         price: 2000,
       });
 
       const product2 = await createTestProduct({
-        sku: 'PROD-001',
-        name: 'Product A',
+        sku: "PROD-001",
+        name: "Product A",
         price: 1000,
       });
 
-      const response = await request(app).get('/products').expect(200);
+      const response = await request(app).get("/products").expect(200);
 
       expect(response.body).toBeInstanceOf(Array);
       expect(response.body.length).toBeGreaterThanOrEqual(2);
@@ -43,7 +43,7 @@ describe('Order Routes Integration Tests', () => {
       // Verify products are sorted by SKU
       const productSkus = response.body.map((p: { sku: string }) => p.sku);
       expect(productSkus).toEqual(
-        expect.arrayContaining(['PROD-001', 'PROD-002'])
+        expect.arrayContaining(["PROD-001", "PROD-002"])
       );
 
       // Verify product structure for both products
@@ -52,8 +52,8 @@ describe('Order Routes Integration Tests', () => {
       );
       expect(foundProduct1).toMatchObject({
         id: product1.id,
-        sku: 'PROD-002',
-        name: 'Product B',
+        sku: "PROD-002",
+        name: "Product B",
         price: 2000,
       });
 
@@ -62,18 +62,18 @@ describe('Order Routes Integration Tests', () => {
       );
       expect(foundProduct2).toMatchObject({
         id: product2.id,
-        sku: 'PROD-001',
-        name: 'Product A',
+        sku: "PROD-001",
+        name: "Product A",
         price: 1000,
       });
     });
   });
 
-  describe('POST /orders - Success Cases', () => {
-    it('should create order successfully with valid request', async () => {
+  describe("POST /orders - Success Cases", () => {
+    it("should create order successfully with valid request", async () => {
       // Setup test data
       const product = await createTestProduct({
-        name: 'Test Product',
+        name: "Test Product",
         price: 1000,
       });
 
@@ -89,10 +89,11 @@ describe('Order Routes Integration Tests', () => {
       });
 
       const orderData = {
-        paymentDetails: { creditCard: "4111111111111111" }, customer: {
-          email: 'customer@example.com',
+        paymentDetails: { creditCard: "4111111111111111" },
+        customer: {
+          email: "customer@example.com",
         },
-        address: '123 Main St, New York, NY 10001',
+        address: "123 Main St, New York, NY 10001",
         items: [
           {
             productId: product.id,
@@ -102,14 +103,14 @@ describe('Order Routes Integration Tests', () => {
       };
 
       const response = await request(app)
-        .post('/orders')
+        .post("/orders")
         .send(orderData)
         .expect(201);
 
       // Verify response structure
       expect(response.body).toMatchObject({
-        customerEmail: 'customer@example.com',
-        shippingAddress: '123 Main St, New York, NY 10001',
+        customerEmail: "customer@example.com",
+        shippingAddress: "123 Main St, New York, NY 10001",
         totalAmount: 2000,
         status: OrderStatus.PAID,
       });
@@ -131,7 +132,7 @@ describe('Order Routes Integration Tests', () => {
       expect(order?.status).toBe(OrderStatus.PAID);
     });
 
-    it('should handle multiple items in order', async () => {
+    it("should handle multiple items in order", async () => {
       const product1 = await createTestProduct({ price: 1000 });
       const product2 = await createTestProduct({ price: 2000 });
       const warehouse = await createTestWarehouse();
@@ -149,10 +150,11 @@ describe('Order Routes Integration Tests', () => {
       });
 
       const orderData = {
-        paymentDetails: { creditCard: "4111111111111111" }, customer: {
-          email: 'customer@example.com',
+        paymentDetails: { creditCard: "4111111111111111" },
+        customer: {
+          email: "customer@example.com",
         },
-        address: '123 Main St, New York, NY 10001',
+        address: "123 Main St, New York, NY 10001",
         items: [
           { productId: product1.id, quantity: 2 },
           { productId: product2.id, quantity: 3 },
@@ -160,7 +162,7 @@ describe('Order Routes Integration Tests', () => {
       };
 
       const response = await request(app)
-        .post('/orders')
+        .post("/orders")
         .send(orderData)
         .expect(201);
 
@@ -169,9 +171,108 @@ describe('Order Routes Integration Tests', () => {
     });
   });
 
+  describe("POST /orders - Validation Errors", () => {
+    it("should return 400 when quantity is a fractional number", async () => {
+      const product = await createTestProduct({ price: 1000 });
+      const warehouse = await createTestWarehouse();
+      await createTestInventory({
+        warehouseId: warehouse.id,
+        productId: product.id,
+        quantity: 10,
+      });
 
-  describe('POST /orders - Business Logic Errors', () => {
-    it('should return 400 when insufficient inventory', async () => {
+      const orderData = {
+        paymentDetails: { creditCard: "4111111111111111" },
+        customer: {
+          email: "test@example.com",
+        },
+        address: "123 Main St, New York, NY 10001",
+        items: [
+          {
+            productId: product.id,
+            quantity: 5.6, // Fractional quantity should be rejected
+          },
+        ],
+      };
+
+      const response = await request(app)
+        .post("/orders")
+        .send(orderData)
+        .expect(400);
+
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toBe("Validation failed");
+      expect(response.body.details).toBeInstanceOf(Array);
+      expect(response.body.details[0].message).toContain("integer");
+    });
+
+    it("should return 400 when quantity is zero", async () => {
+      const product = await createTestProduct({ price: 1000 });
+      const warehouse = await createTestWarehouse();
+      await createTestInventory({
+        warehouseId: warehouse.id,
+        productId: product.id,
+        quantity: 10,
+      });
+
+      const orderData = {
+        paymentDetails: { creditCard: "4111111111111111" },
+        customer: {
+          email: "test@example.com",
+        },
+        address: "123 Main St, New York, NY 10001",
+        items: [
+          {
+            productId: product.id,
+            quantity: 0, // Zero quantity should be rejected
+          },
+        ],
+      };
+
+      const response = await request(app)
+        .post("/orders")
+        .send(orderData)
+        .expect(400);
+
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toBe("Validation failed");
+    });
+
+    it("should return 400 when quantity is negative", async () => {
+      const product = await createTestProduct({ price: 1000 });
+      const warehouse = await createTestWarehouse();
+      await createTestInventory({
+        warehouseId: warehouse.id,
+        productId: product.id,
+        quantity: 10,
+      });
+
+      const orderData = {
+        paymentDetails: { creditCard: "4111111111111111" },
+        customer: {
+          email: "test@example.com",
+        },
+        address: "123 Main St, New York, NY 10001",
+        items: [
+          {
+            productId: product.id,
+            quantity: -1, // Negative quantity should be rejected
+          },
+        ],
+      };
+
+      const response = await request(app)
+        .post("/orders")
+        .send(orderData)
+        .expect(400);
+
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toBe("Validation failed");
+    });
+  });
+
+  describe("POST /orders - Business Logic Errors", () => {
+    it("should return 400 when insufficient inventory", async () => {
       const product = await createTestProduct({ price: 1000 });
       const warehouse = await createTestWarehouse();
       await createTestInventory({
@@ -181,10 +282,11 @@ describe('Order Routes Integration Tests', () => {
       });
 
       const orderData = {
-        paymentDetails: { creditCard: "4111111111111111" }, customer: {
-          email: 'test@example.com',
+        paymentDetails: { creditCard: "4111111111111111" },
+        customer: {
+          email: "test@example.com",
         },
-        address: '123 Main St, New York, NY 10001',
+        address: "123 Main St, New York, NY 10001",
         items: [
           {
             productId: product.id,
@@ -194,17 +296,19 @@ describe('Order Routes Integration Tests', () => {
       };
 
       const response = await request(app)
-        .post('/orders')
+        .post("/orders")
         .send(orderData)
         .expect(400);
 
-      expect(response.body).toHaveProperty('error');
+      expect(response.body).toHaveProperty("error");
       // When insufficient inventory, warehouse service throws split shipment error
       // because no warehouse has enough inventory
-      expect(response.body.error).toContain('No single warehouse has all items in sufficient quantity');
+      expect(response.body.error).toContain(
+        "No single warehouse has all items in sufficient quantity"
+      );
     });
 
-    it('should return 402 when payment fails', async () => {
+    it("should return 402 when payment fails", async () => {
       const product = await createTestProduct({ price: 9999 }); // $99.99 - triggers payment failure
       const warehouse = await createTestWarehouse();
       await createTestInventory({
@@ -214,10 +318,11 @@ describe('Order Routes Integration Tests', () => {
       });
 
       const orderData = {
-        paymentDetails: { creditCard: "4111111111111111" }, customer: {
-          email: 'test@example.com',
+        paymentDetails: { creditCard: "4111111111111111" },
+        customer: {
+          email: "test@example.com",
         },
-        address: '123 Main St, New York, NY 10001',
+        address: "123 Main St, New York, NY 10001",
         items: [
           {
             productId: product.id,
@@ -227,12 +332,12 @@ describe('Order Routes Integration Tests', () => {
       };
 
       const response = await request(app)
-        .post('/orders')
+        .post("/orders")
         .send(orderData)
         .expect(402);
 
-      expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toBe('Payment processing failed');
+      expect(response.body).toHaveProperty("error");
+      expect(response.body.error).toBe("Payment processing failed");
     });
   });
 });
