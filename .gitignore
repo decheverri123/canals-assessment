@@ -56,3 +56,6 @@ prisma/migrations/
 .kiro/specs/order-management-api/design.md
 .kiro/specs/order-management-api/requirements.md
 .kiro/specs/order-management-api/tasks.md
+ASSESSMENT_REVIEW.md
+DOCUMENTATION 2.md
+.gitignore
