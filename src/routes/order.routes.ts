@@ -7,6 +7,10 @@ import { OrderController } from "../controllers/order.controller";
 import { validateCreateOrder } from "../middlewares/validation.middleware";
 import { asyncHandler } from "../middlewares/error-handler.middleware";
 import { prisma } from "../config/database";
+import { OrderService } from "../services/order.service";
+import { MockGeocodingService } from "../services/geocoding.service";
+import { MockPaymentService } from "../services/payment.service";
+import { WarehouseService } from "../services/warehouse.service";
 
 /**
  * Create order routes
@@ -14,9 +18,13 @@ import { prisma } from "../config/database";
 const router: Router = Router();
 
 /**
- * Initialize order controller
+ * Initialize services and controller
  */
-const orderController = new OrderController(prisma);
+const geocodingService = new MockGeocodingService();
+const paymentService = new MockPaymentService();
+const warehouseService = new WarehouseService(prisma);
+const orderService = new OrderService(prisma, geocodingService, paymentService, warehouseService);
+const orderController = new OrderController(orderService);
 
 /**
  * GET /products

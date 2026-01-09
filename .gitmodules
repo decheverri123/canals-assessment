@@ -1,0 +1,3 @@
+[submodule "gemini-commands"]
+	path = gemini-commands
+	url = https://github.com/decheverri123/gemini-commands.git

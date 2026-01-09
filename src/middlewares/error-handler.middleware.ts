@@ -3,6 +3,8 @@
  */
 
 import { Request, Response, NextFunction } from "express";
+import { ZodError } from "zod";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 /**
  * Custom error class for business logic errors
@@ -36,7 +38,7 @@ export class SplitShipmentError extends BusinessError {
  * Async error wrapper to catch errors in async route handlers
  */
 export const asyncHandler = (
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<void | Response>
 ) => {
   return (req: Request, res: Response, next: NextFunction) => {
     Promise.resolve(fn(req, res, next)).catch(next);
@@ -71,36 +73,35 @@ export const errorHandler = (
   }
 
   // Handle Zod validation errors (shouldn't reach here if validation middleware works)
-  if (err.name === "ZodError") {
+  if (err instanceof ZodError) {
     res.status(400).json({
       error: "Validation failed",
       ...(process.env.NODE_ENV !== "production" && {
-        details: (err as any).errors,
+        details: err.errors,
       }),
     });
     return;
   }
 
   // Handle Prisma errors
-  if (err.name === "PrismaClientKnownRequestError") {
-    const prismaError = err as any;
+  if (err instanceof PrismaClientKnownRequestError) {
     // Handle unique constraint violations
-    if (prismaError.code === "P2002") {
+    if (err.code === "P2002") {
       res.status(409).json({
         error: "Resource already exists",
         ...(process.env.NODE_ENV !== "production" && {
-          code: prismaError.code,
-          meta: prismaError.meta,
+          code: err.code,
+          meta: err.meta,
         }),
       });
       return;
     }
     // Handle record not found
-    if (prismaError.code === "P2025") {
+    if (err.code === "P2025") {
       res.status(404).json({
         error: "Resource not found",
         ...(process.env.NODE_ENV !== "production" && {
-          code: prismaError.code,
+          code: err.code,
         }),
       });
       return;
@@ -108,7 +109,10 @@ export const errorHandler = (
   }
 
   // Default error handler for unexpected errors
-  const statusCode = (err as any).statusCode || 500;
+  // Check if error has statusCode property (e.g., from Express or custom errors)
+  const statusCode = "statusCode" in err && typeof err.statusCode === "number" 
+    ? err.statusCode 
+    : 500;
   res.status(statusCode).json({
     error:
       process.env.NODE_ENV === "production"

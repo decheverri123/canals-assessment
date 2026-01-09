@@ -58,4 +58,4 @@ prisma/migrations/
 .kiro/specs/order-management-api/tasks.md
 ASSESSMENT_REVIEW.md
 DOCUMENTATION 2.md
-.gitignore
+/gemini-commands
