@@ -17,16 +17,20 @@
     "test:setup-phase2": "ts-node scripts/setup-phase2-test-data.ts",
     "test:distance-tiebreaker": "ts-node scripts/test-distance-tiebreaker.ts",
     "test:no-split": "ts-node scripts/test-no-split-shipments.ts",
-    "test:partial-stock": "ts-node scripts/test-partial-stock.ts"
+    "test:partial-stock": "ts-node scripts/test-partial-stock.ts",
+    "cli": "ts-node cli/index.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@clack/prompts": "^0.11.0",
     "@prisma/client": "^5.19.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
+    "ora": "^9.0.0",
+    "picocolors": "^1.1.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {
