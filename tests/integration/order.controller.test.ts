@@ -376,12 +376,21 @@ describe('OrderController Integration Tests', () => {
         controller.createOrder(mockRequest as Request, mockResponse as Response)
       ).rejects.toThrow('Payment processing failed');
 
+<<<<<<< HEAD
       // Verify order was created but status remains PENDING
       const orders = await testPrisma.order.findMany();
       expect(orders).toHaveLength(1);
       expect(orders[0].status).toBe(OrderStatus.PENDING);
 
       // Verify inventory was deducted (transaction committed before payment)
+=======
+      // Verify order was created and marked as FAILED
+      const orders = await testPrisma.order.findMany();
+      expect(orders).toHaveLength(1);
+      expect(orders[0].status).toBe(OrderStatus.FAILED);
+
+      // Verify inventory was restored after payment failure
+>>>>>>> origin/main
       const inventory = await testPrisma.inventory.findUnique({
         where: {
           warehouseId_productId: {
@@ -390,7 +399,11 @@ describe('OrderController Integration Tests', () => {
           },
         },
       });
+<<<<<<< HEAD
       expect(inventory?.quantity).toBe(9); // 10 - 1 = 9
+=======
+      expect(inventory?.quantity).toBe(10); // Restored to original quantity
+>>>>>>> origin/main
     });
 
     it('should rollback transaction when inventory check fails', async () => {

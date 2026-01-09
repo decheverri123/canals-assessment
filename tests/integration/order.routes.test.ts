@@ -523,6 +523,27 @@ describe('Order Routes Integration Tests', () => {
 
       expect(response.body).toHaveProperty('error');
       expect(response.body.error).toBe('Payment processing failed');
+<<<<<<< HEAD
+=======
+
+      // Verify order was created and marked as FAILED
+      const orders = await testPrisma.order.findMany({
+        where: { customerEmail: 'test@example.com' },
+      });
+      expect(orders).toHaveLength(1);
+      expect(orders[0].status).toBe(OrderStatus.FAILED);
+
+      // Verify inventory was restored after payment failure
+      const inventory = await testPrisma.inventory.findUnique({
+        where: {
+          warehouseId_productId: {
+            warehouseId: warehouse.id,
+            productId: product.id,
+          },
+        },
+      });
+      expect(inventory?.quantity).toBe(10); // Restored to original quantity
+>>>>>>> origin/main
     });
   });
 
