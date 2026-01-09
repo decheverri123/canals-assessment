@@ -38,6 +38,7 @@ export interface OrderResponse {
 export interface OrderItemResponse {
   id: string;
   productId: string;
+  productName: string;
   quantity: number;
   priceAtPurchase: number;
 }

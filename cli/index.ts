@@ -111,7 +111,7 @@ async function main(): Promise<void> {
       submitSpinner.succeed(pc.green('Order submitted successfully!'));
       
       // Display formatted result
-      displayOrderSuccess(result.response, products);
+      displayOrderSuccess(result.response);
       
       // Display raw curl command and response
       displayCurlCommand(result.curlCommand);

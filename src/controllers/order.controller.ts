@@ -212,6 +212,7 @@ export class OrderController {
       orderItems: updatedOrder.orderItems.map((item) => ({
         id: item.id,
         productId: item.productId,
+        productName: item.product.name,
         quantity: item.quantity,
         priceAtPurchase: item.priceAtPurchase,
       })),

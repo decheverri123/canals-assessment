@@ -4,7 +4,7 @@
  */
 
 import pc from 'picocolors';
-import type { OrderItem, OrderResponse, Product } from '../types/cli.types';
+import type { OrderItem, OrderResponse } from '../types/cli.types';
 import { maskCreditCard } from '../prompts/payment.prompt';
 
 /**
@@ -60,7 +60,7 @@ export function displayOrderSummary(
 /**
  * Display successful order response
  */
-export function displayOrderSuccess(order: OrderResponse, products: Product[]): void {
+export function displayOrderSuccess(order: OrderResponse): void {
   const divider = pc.dim('='.repeat(50));
 
   console.log('');
@@ -83,10 +83,8 @@ export function displayOrderSuccess(order: OrderResponse, products: Product[]): 
   // Items
   console.log(`   ${pc.dim('Items:')}`);
   for (const item of order.orderItems) {
-    const product = products.find((p) => p.id === item.productId);
-    const name = product?.name || item.productId;
     const subtotal = item.priceAtPurchase * item.quantity;
-    console.log(`     - ${item.quantity}x ${name}: ${pc.green(formatPrice(subtotal))}`);
+    console.log(`     - ${item.quantity}x ${item.productName}: ${pc.green(formatPrice(subtotal))}`);
   }
   console.log('');
 
@@ -127,17 +125,7 @@ function getStatusBadge(status: string): string {
   }
 }
 
-/**
- * Display available products list
- */
-export function displayProducts(products: Product[]): void {
-  console.log('');
-  console.log(pc.dim('Available Products:'));
-  for (const product of products) {
-    console.log(`   - ${product.name} ${pc.dim(`(${product.sku})`)} ${pc.green(formatPrice(product.price))}`);
-  }
-  console.log('');
-}
+// Removed displayProducts - not currently used
 
 /**
  * Display the raw curl command

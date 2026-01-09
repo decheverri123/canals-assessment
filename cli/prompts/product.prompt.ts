@@ -45,14 +45,41 @@ export async function selectProducts(products: Product[]): Promise<Product[]> {
 }
 
 /**
+ * Calculate running total from order items
+ */
+function calculateTotal(items: OrderItem[]): number {
+  return items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+}
+
+/**
+ * Display running total
+ */
+function displayRunningTotal(items: OrderItem[]): void {
+  if (items.length === 0) return;
+  
+  const total = calculateTotal(items);
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  
+  console.log('');
+  console.log(pc.dim('  -------------------------'));
+  console.log(`  ${pc.dim('Cart:')} ${itemCount} item${itemCount !== 1 ? 's' : ''} | ${pc.bold(pc.green(formatPrice(total)))}`);
+  console.log('');
+}
+
+/**
  * Prompt user to set quantity for each selected product
  */
 export async function setQuantities(products: Product[]): Promise<OrderItem[]> {
   const items: OrderItem[] = [];
 
-  for (const product of products) {
+  for (let i = 0; i < products.length; i++) {
+    const product = products[i];
+    
+    // Show running total if we have items
+    displayRunningTotal(items);
+    
     const quantity = await p.text({
-      message: `Quantity for ${pc.cyan(product.name)} ${pc.dim(formatPrice(product.price))} ${pc.dim(`(default: ${DEFAULTS.quantity})`)}`,
+      message: `[${i + 1}/${products.length}] Quantity for ${pc.cyan(product.name)} ${pc.dim(formatPrice(product.price))} ${pc.dim(`(default: ${DEFAULTS.quantity})`)}`,
       placeholder: 'Press Enter for 1',
       validate: (value) => {
         const valToCheck = value.trim() || String(DEFAULTS.quantity);
@@ -73,11 +100,20 @@ export async function setQuantities(products: Product[]): Promise<OrderItem[]> {
     }
 
     const result = (quantity as string | undefined)?.trim();
+    const qty = result ? parseInt(result, 10) : DEFAULTS.quantity;
+    
     items.push({
       product,
-      quantity: result ? parseInt(result, 10) : DEFAULTS.quantity,
+      quantity: qty,
     });
+    
+    // Show item added confirmation with subtotal
+    const subtotal = product.price * qty;
+    console.log(pc.dim(`  + ${qty}x ${product.name}: ${formatPrice(subtotal)}`));
   }
+
+  // Show final total
+  displayRunningTotal(items);
 
   return items;
 }
