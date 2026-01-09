@@ -5,6 +5,10 @@
 
 import { Request, Response } from 'express';
 import { OrderController } from '../../src/controllers/order.controller';
+import { OrderService } from '../../src/services/order.service';
+import { GeocodingService } from '../../src/services/geocoding.service';
+import { PaymentService } from '../../src/services/payment.service';
+import { WarehouseService } from '../../src/services/warehouse.service';
 import { testPrisma } from '../setup';
 import {
   createTestProduct,
@@ -22,7 +26,12 @@ describe('OrderController Integration Tests', () => {
   };
 
   beforeEach(() => {
-    controller = new OrderController(testPrisma);
+    const geocodingService = new GeocodingService();
+    const paymentService = new PaymentService();
+    const warehouseService = new WarehouseService(testPrisma);
+    const orderService = new OrderService(testPrisma, geocodingService, paymentService, warehouseService);
+    controller = new OrderController(orderService);
+    
     mockResponse = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
