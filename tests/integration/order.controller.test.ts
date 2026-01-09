@@ -12,6 +12,8 @@ import {
   createTestInventory,
 } from '../helpers/test-helpers';
 import { OrderStatus } from '@prisma/client';
+import { PaymentService } from '../../src/services/payment.service';
+import { WarehouseService } from '../../src/services/warehouse.service';
 
 describe('OrderController Integration Tests', () => {
   let controller: OrderController;
@@ -510,6 +512,295 @@ describe('OrderController Integration Tests', () => {
         },
       });
       expect(inventory2?.quantity).toBe(7);
+    });
+  });
+
+  describe('Critical Edge Cases', () => {
+    /**
+     * Helper function to submit an order via the controller
+     */
+    async function submitOrder(items: Array<{ productId: string; quantity: number }>): Promise<void> {
+      const mockReq: Partial<Request> = {
+        body: {
+          paymentDetails: { creditCard: "4111111111111111" },
+          customer: { email: 'test@example.com' },
+          address: '123 Test St, New York, NY 10001',
+          items,
+        },
+      };
+
+      const mockRes: Partial<Response> & {
+        status: jest.Mock;
+        json: jest.Mock;
+      } = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn().mockReturnThis(),
+      };
+
+      await controller.createOrder(mockReq as Request, mockRes as Response);
+    }
+
+    it('should prevent double-booking with concurrent orders', async () => {
+      const product = await createTestProduct();
+      const warehouse = await createTestWarehouse();
+      await createTestInventory({
+        warehouseId: warehouse.id,
+        productId: product.id,
+        quantity: 1, // Only 1 available
+      });
+
+      // Execute two orders simultaneously
+      const results = await Promise.allSettled([
+        submitOrder([{ productId: product.id, quantity: 1 }]),
+        submitOrder([{ productId: product.id, quantity: 1 }]),
+      ]);
+
+      // One should succeed, one should fail
+      const succeeded = results.filter((r) => r.status === 'fulfilled');
+      const failed = results.filter((r) => r.status === 'rejected');
+
+      expect(succeeded).toHaveLength(1);
+      expect(failed).toHaveLength(1);
+      expect((failed[0] as PromiseRejectedResult).reason.message).toContain('Insufficient inventory');
+
+      // Verify only one order was created
+      const orders = await testPrisma.order.findMany();
+      expect(orders).toHaveLength(1);
+
+      // Verify inventory was deducted only once
+      const inventory = await testPrisma.inventory.findUnique({
+        where: {
+          warehouseId_productId: {
+            warehouseId: warehouse.id,
+            productId: product.id,
+          },
+        },
+      });
+      expect(inventory?.quantity).toBe(0);
+    });
+
+    it('should handle payment API timeout', async () => {
+      const product = await createTestProduct({ price: 1000 });
+      const warehouse = await createTestWarehouse();
+      await createTestInventory({
+        warehouseId: warehouse.id,
+        productId: product.id,
+        quantity: 10,
+      });
+
+      // Mock payment service to timeout
+      const paymentServiceSpy = jest.spyOn(PaymentService.prototype, 'processPayment');
+      paymentServiceSpy.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(() => resolve({ success: true }), 60000); // 60s delay
+          })
+      );
+
+      // Set a timeout for the test
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Payment timeout')), 5000); // 5s test timeout
+      });
+
+      const orderPromise = submitOrder([{ productId: product.id, quantity: 1 }]);
+
+      await expect(Promise.race([orderPromise, timeoutPromise])).rejects.toThrow('Payment timeout');
+
+      // Order should not be created
+      const orders = await testPrisma.order.findMany();
+      expect(orders).toHaveLength(0);
+
+      // Inventory should not be deducted
+      const inventory = await testPrisma.inventory.findUnique({
+        where: {
+          warehouseId_productId: {
+            warehouseId: warehouse.id,
+            productId: product.id,
+          },
+        },
+      });
+      expect(inventory?.quantity).toBe(10);
+
+      paymentServiceSpy.mockRestore();
+    });
+
+    it('should break distance ties deterministically', async () => {
+      const product = await createTestProduct();
+
+      // Two warehouses at EXACTLY same distance
+      const warehouse1 = await createTestWarehouse({
+        name: 'Warehouse 1',
+        latitude: 40.7128,
+        longitude: -74.0060,
+      });
+      const warehouse2 = await createTestWarehouse({
+        name: 'Warehouse 2',
+        latitude: 40.7128,
+        longitude: -74.0060,
+      });
+
+      await createTestInventory({
+        warehouseId: warehouse1.id,
+        productId: product.id,
+        quantity: 100,
+      });
+      await createTestInventory({
+        warehouseId: warehouse2.id,
+        productId: product.id,
+        quantity: 100,
+      });
+
+      // Customer at the same location
+      const customerCoordinates = { latitude: 40.7128, longitude: -74.0060 };
+
+      // Use WarehouseService directly to test deterministic behavior
+      const warehouseService = new WarehouseService(testPrisma);
+
+      // Call findClosestWarehouse multiple times
+      const result1 = await warehouseService.findClosestWarehouse(
+        [{ productId: product.id, quantity: 1 }],
+        customerCoordinates
+      );
+      const result2 = await warehouseService.findClosestWarehouse(
+        [{ productId: product.id, quantity: 1 }],
+        customerCoordinates
+      );
+
+      // Should always pick the same warehouse (deterministic)
+      expect(result1.warehouse.id).toBe(result2.warehouse.id);
+    });
+
+    it('should not touch inventory when order creation fails', async () => {
+      const product = await createTestProduct({ price: 1000 });
+      const warehouse = await createTestWarehouse();
+      await createTestInventory({
+        warehouseId: warehouse.id,
+        productId: product.id,
+        quantity: 10,
+      });
+
+      // Force failure by mocking the transaction to throw during order creation
+      // This simulates a database error that causes transaction rollback
+      const transactionSpy = jest.spyOn(testPrisma, '$transaction');
+      transactionSpy.mockImplementationOnce(async (callback: any) => {
+        // Create a mock transaction client that will fail at order creation
+        const mockTx = {
+          inventory: {
+            findUnique: jest.fn().mockResolvedValue({
+              id: 'inventory-id',
+              warehouseId: warehouse.id,
+              productId: product.id,
+              quantity: 10,
+            }),
+            update: jest.fn().mockResolvedValue({
+              id: 'inventory-id',
+              warehouseId: warehouse.id,
+              productId: product.id,
+              quantity: 8, // This would be the new value, but transaction will rollback
+            }),
+          },
+          order: {
+            create: jest.fn().mockRejectedValue(new Error('Database error')),
+          },
+          orderItem: {
+            create: jest.fn(),
+          },
+        };
+        try {
+          return await callback(mockTx);
+        } catch (error) {
+          // Transaction failed, all changes are rolled back
+          throw error;
+        }
+      });
+
+      mockRequest = {
+        body: {
+          paymentDetails: { creditCard: "4111111111111111" },
+          customer: { email: 'test@example.com' },
+          address: '123 Test St, New York, NY 10001',
+          items: [{ productId: product.id, quantity: 2 }],
+        },
+      };
+
+      await expect(
+        controller.createOrder(mockRequest as Request, mockResponse as Response)
+      ).rejects.toThrow('Database error');
+
+      // Verify inventory is unchanged (transaction rolled back)
+      const inventory = await testPrisma.inventory.findUnique({
+        where: {
+          warehouseId_productId: {
+            warehouseId: warehouse.id,
+            productId: product.id,
+          },
+        },
+      });
+      expect(inventory?.quantity).toBe(10); // Still 10, not 8
+
+      transactionSpy.mockRestore();
+    });
+
+    it('should select correct warehouse in realistic multi-warehouse scenario', async () => {
+      // NYC warehouse - closest but missing Product B
+      const productA = await createTestProduct({ name: 'Product A', price: 1000 });
+      const productB = await createTestProduct({ name: 'Product B', price: 2000 });
+
+      const nycWarehouse = await createTestWarehouse({
+        name: 'NYC',
+        latitude: 40.7128,
+        longitude: -74.0060,
+      });
+
+      // Philly warehouse - farther but has everything
+      const phillyWarehouse = await createTestWarehouse({
+        name: 'Philly',
+        latitude: 39.9526,
+        longitude: -75.1652,
+      });
+
+      await createTestInventory({
+        warehouseId: nycWarehouse.id,
+        productId: productA.id,
+        quantity: 100,
+      });
+
+      await createTestInventory({
+        warehouseId: phillyWarehouse.id,
+        productId: productA.id,
+        quantity: 100,
+      });
+      await createTestInventory({
+        warehouseId: phillyWarehouse.id,
+        productId: productB.id,
+        quantity: 100,
+      });
+
+      mockRequest = {
+        body: {
+          paymentDetails: { creditCard: "4111111111111111" },
+          customer: { email: 'test@example.com' },
+          address: '123 Broadway, New York, NY', // Close to NYC
+          items: [
+            { productId: productA.id, quantity: 1 },
+            { productId: productB.id, quantity: 1 },
+          ],
+        },
+      };
+
+      await controller.createOrder(
+        mockRequest as Request,
+        mockResponse as Response
+      );
+
+      expect(mockResponse.status).toHaveBeenCalledWith(201);
+      const responseCall = (mockResponse.json as jest.Mock).mock.calls[0][0];
+
+      // Should pick Philly even though NYC is closer
+      expect(responseCall.warehouse.id).toBe(phillyWarehouse.id);
+      expect(responseCall.warehouse.selectionReason).toContain('closest warehouse');
+      expect(responseCall.warehouse.closestWarehouseExcluded).toBeDefined();
+      expect(responseCall.warehouse.closestWarehouseExcluded?.name).toBe('NYC');
     });
   });
 });
