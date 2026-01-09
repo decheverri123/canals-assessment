@@ -138,3 +138,52 @@ export function displayProducts(products: Product[]): void {
   }
   console.log('');
 }
+
+/**
+ * Display the raw curl command
+ */
+export function displayCurlCommand(curlCommand: string): void {
+  const divider = pc.dim('-'.repeat(50));
+  
+  console.log('');
+  console.log(pc.bold(pc.magenta('[>] Curl Command')));
+  console.log(divider);
+  console.log('');
+  console.log(pc.cyan(curlCommand));
+  console.log('');
+  console.log(divider);
+}
+
+/**
+ * Display raw JSON response
+ */
+export function displayRawResponse(rawResponse: string): void {
+  const divider = pc.dim('-'.repeat(50));
+  
+  console.log('');
+  console.log(pc.bold(pc.magenta('[<] Raw Response')));
+  console.log(divider);
+  console.log('');
+  // Colorize the JSON
+  const colorizedJson = colorizeJson(rawResponse);
+  console.log(colorizedJson);
+  console.log('');
+  console.log(divider);
+}
+
+/**
+ * Simple JSON colorizer for terminal output
+ */
+function colorizeJson(jsonString: string): string {
+  return jsonString
+    // Colorize keys
+    .replace(/"([^"]+)":/g, `${pc.cyan('"$1"')}:`)
+    // Colorize string values
+    .replace(/: "([^"]+)"/g, `: ${pc.green('"$1"')}`)
+    // Colorize numbers
+    .replace(/: (\d+)/g, `: ${pc.yellow('$1')}`)
+    // Colorize booleans
+    .replace(/: (true|false)/g, `: ${pc.magenta('$1')}`)
+    // Colorize null
+    .replace(/: (null)/g, `: ${pc.dim('$1')}`);
+}

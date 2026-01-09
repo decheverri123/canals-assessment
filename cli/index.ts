@@ -14,7 +14,8 @@ import { fetchProducts, submitOrder } from './services/api.service';
 import { selectProducts, setQuantities } from './prompts/product.prompt';
 import { promptCustomerInfo } from './prompts/customer.prompt';
 import { promptPaymentInfo } from './prompts/payment.prompt';
-import { displayOrderSummary, displayOrderSuccess, displayError } from './ui/formatter';
+import { displayOrderSummary, displayOrderSuccess, displayError, displayCurlCommand, displayRawResponse } from './ui/formatter';
+import { generateCurlCommand } from './services/api.service';
 import type { OrderRequest, Product } from './types/cli.types';
 
 /**
@@ -61,6 +62,21 @@ async function main(): Promise<void> {
     // Step 4: Get payment info
     const paymentInfo = await promptPaymentInfo();
 
+    // Build the order request early to show curl command
+    const orderRequest: OrderRequest = {
+      customer: {
+        email: customerInfo.email,
+      },
+      address: customerInfo.address,
+      paymentDetails: {
+        creditCard: paymentInfo.creditCard,
+      },
+      items: orderItems.map((item) => ({
+        productId: item.product.id,
+        quantity: item.quantity,
+      })),
+    };
+
     // Step 5: Display summary and confirm
     displayOrderSummary(
       orderItems,
@@ -68,6 +84,9 @@ async function main(): Promise<void> {
       customerInfo.email,
       paymentInfo.creditCard
     );
+    
+    // Show the curl command that will be executed
+    displayCurlCommand(generateCurlCommand(orderRequest));
 
     const confirmed = await p.confirm({
       message: 'Confirm and submit order?',
@@ -87,24 +106,17 @@ async function main(): Promise<void> {
     // Step 6: Submit order
     const submitSpinner = ora('Submitting order...').start();
 
-    const orderRequest: OrderRequest = {
-      customer: {
-        email: customerInfo.email,
-      },
-      address: customerInfo.address,
-      paymentDetails: {
-        creditCard: paymentInfo.creditCard,
-      },
-      items: orderItems.map((item) => ({
-        productId: item.product.id,
-        quantity: item.quantity,
-      })),
-    };
-
     try {
-      const response = await submitOrder(orderRequest);
+      const result = await submitOrder(orderRequest);
       submitSpinner.succeed(pc.green('Order submitted successfully!'));
-      displayOrderSuccess(response, products);
+      
+      // Display formatted result
+      displayOrderSuccess(result.response, products);
+      
+      // Display raw curl command and response
+      displayCurlCommand(result.curlCommand);
+      displayRawResponse(result.rawResponse);
+      
       orderComplete = true;
     } catch (error) {
       submitSpinner.fail(pc.red('Order submission failed'));
