@@ -11,11 +11,11 @@ datasource db {
 }
 
 model Product {
-  id        String      @id @default(uuid())
-  sku       String      @unique
-  name      String
-  price     Int
-  inventory Inventory[]
+  id         String      @id @default(uuid())
+  sku        String      @unique
+  name       String
+  price      Int
+  inventory  Inventory[]
   orderItems OrderItem[]
 
   @@map("products")
@@ -36,7 +36,7 @@ model Inventory {
   id          String    @id @default(uuid())
   warehouseId String
   productId   String
-  quantity    Int
+  quantity    Int       @default(0)
   warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
   product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -57,13 +57,13 @@ model Order {
 }
 
 model OrderItem {
-  id              String   @id @default(uuid())
+  id              String  @id @default(uuid())
   orderId         String
   productId       String
   quantity        Int
   priceAtPurchase Int
-  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product         Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  order           Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   @@map("order_items")
 }

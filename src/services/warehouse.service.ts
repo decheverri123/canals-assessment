@@ -1,7 +1,7 @@
-import { PrismaClient, Warehouse } from '@prisma/client';
-import { calculateHaversineDistance } from '../utils/haversine';
-import { BusinessError } from '../middlewares/error-handler.middleware';
-import { Coordinates } from '../types/coordinates.types';
+import { PrismaClient, Warehouse } from "@prisma/client";
+import { calculateHaversineDistance } from "../utils/haversine";
+import { BusinessError } from "../middlewares/error-handler.middleware";
+import { Coordinates } from "../types/coordinates.types";
 
 export interface OrderItemRequest {
   productId: string;
@@ -66,13 +66,10 @@ export class WarehouseService {
     // Calculate distance to ALL warehouses (for comparison)
     const allWarehousesWithDistance: WarehouseWithDistance[] = warehouses.map(
       (warehouse) => {
-        const distance = calculateHaversineDistance(
-          customerCoordinates,
-          {
-            latitude: warehouse.latitude,
-            longitude: warehouse.longitude,
-          }
-        );
+        const distance = calculateHaversineDistance(customerCoordinates, {
+          latitude: warehouse.latitude,
+          longitude: warehouse.longitude,
+        });
 
         return {
           ...warehouse,
@@ -99,9 +96,9 @@ export class WarehouseService {
 
     if (warehousesWithInventory.length === 0) {
       throw new BusinessError(
-        'No single warehouse has all items in sufficient quantity. Split shipments are not supported.',
+        "No single warehouse has all items in sufficient quantity. Split shipments are not supported.",
         400,
-        'SPLIT_SHIPMENT_NOT_SUPPORTED'
+        "SPLIT_SHIPMENT_NOT_SUPPORTED"
       );
     }
 
@@ -111,11 +108,13 @@ export class WarehouseService {
 
     // Determine selection reason
     let selectionReason: string;
-    let closestExcluded: {
-      name: string;
-      distanceKm: number;
-      reason: string;
-    } | undefined;
+    let closestExcluded:
+      | {
+          name: string;
+          distanceKm: number;
+          reason: string;
+        }
+      | undefined;
 
     if (selectedWarehouse.id === closestWarehouseOverall.id) {
       selectionReason = `Selected as the closest warehouse (${distanceKm} km away) with all requested items in stock.`;
@@ -140,8 +139,8 @@ export class WarehouseService {
 
       const reason =
         missingItems.length > 0
-          ? `Missing or insufficient inventory: ${missingItems.join(', ')}`
-          : 'Insufficient inventory for all items';
+          ? `Missing or insufficient inventory: ${missingItems.join(", ")}`
+          : "Insufficient inventory for all items";
 
       closestExcluded = {
         name: closestWarehouseOverall.name,
@@ -149,7 +148,7 @@ export class WarehouseService {
         reason,
       };
 
-      selectionReason = `Selected warehouse is ${distanceKm} km away. Closest warehouse "${closestWarehouseOverall.name}" (${closestDistanceKm} km) was excluded: ${reason}.`;
+      selectionReason = `Selected warehouse is ${distanceKm} km away. Closest warehouse ${closestWarehouseOverall.name} (${closestDistanceKm} km) was excluded: ${reason}.`;
     }
 
     return {

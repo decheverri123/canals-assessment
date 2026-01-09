@@ -208,7 +208,11 @@ export class OrderController {
     });
 
     if (!orderWithItems) {
-      throw new BusinessError("Order not found after creation", 500, "ORDER_NOT_FOUND");
+      throw new BusinessError(
+        "Order not found after creation",
+        500,
+        "ORDER_NOT_FOUND"
+      );
     }
 
     // Step 7: Return order with items and warehouse information
