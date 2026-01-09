@@ -2,32 +2,41 @@
 
 Welcome to the Canals Order Management System! This project is a backend assessment implementing a robust, production-ready Order API with intelligent warehouse selection, inventory management, and external service integration.
 
-## 🚀 Quick Start (Interviewer Track)
+## 🚀 Quick Start (Reviewer Track)
 
-The fastest way to evaluate the project is using Docker. This single command sets up the database, runs migrations, seeds data, and starts the API server.
-
-```bash
-docker-compose up
-```
-or
+**One command to rule them all!** Just run:
 
 ```bash
 docker compose up
 ```
 
-**What happens next?**
-1.  **PostgreSQL** starts on port 5432.
-2.  **Migrations** run automatically to create the schema.
-3.  **Seeding** populates the DB with Products, Warehouses, and Inventory.
-4.  **API Server** starts on `http://localhost:3000`.
+This single command will:
+1.  **Start PostgreSQL** database on port 5432
+2.  **Run migrations** automatically to create the schema
+3.  **Seed the database** with 5 products, 3 warehouses, and inventory data
+4.  **Start the API server** on `http://localhost:3000`
+
+**That's it!** The application is ready to use. No additional setup required.
 
 ### Verifying the Setup
 
-Once the server is running, you can use the **Interactive CLI** to verify functionality without writing `curl` commands manually.
+Once the containers are running (you'll see "Server is running on port 3000" in the logs), verify everything works:
 
-Open a new terminal window:
+**Option 1: Quick API Check**
 ```bash
-# Install local dependencies first (if you haven't)
+# Check health
+curl http://localhost:3000/health
+
+# List products (should return 5 products)
+curl http://localhost:3000/products
+
+# List warehouses (should return 3 warehouses)
+curl http://localhost:3000/warehouses
+```
+
+**Option 2: Interactive CLI** (requires local dependencies)
+```bash
+# In a new terminal, install dependencies first
 pnpm install
 
 # Run the interactive CLI
