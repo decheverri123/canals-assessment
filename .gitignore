@@ -1,17 +1,41 @@
 # Dependencies
 node_modules/
+.pnp
+.pnp.js
 
-# Build output
+# Testing
+coverage/
+*.lcov
+.nyc_output
+
+# Production
 dist/
+build/
 
 # Environment variables
 .env
 .env.local
-.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# Prisma
-.prisma/
-node_modules/.prisma/
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # IDE
 .vscode/
@@ -19,18 +43,16 @@ node_modules/.prisma/
 *.swp
 *.swo
 *~
+.cursor/
 
-# OS
-.DS_Store
-Thumbs.db
+# Prisma
+prisma/migrations/
 
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+# TypeScript
+*.tsbuildinfo
 
-# Testing
-coverage/
-.nyc_output/
+# Docker
+.dockerignore
+.kiro/specs/order-management-api/design.md
+.kiro/specs/order-management-api/requirements.md
+.kiro/specs/order-management-api/tasks.md
