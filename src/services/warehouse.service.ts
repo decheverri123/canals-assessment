@@ -63,35 +63,17 @@ export class WarehouseService {
       },
     });
 
-    // Calculate distance to ALL warehouses (for comparison)
-    const allWarehousesWithDistance: WarehouseWithDistance[] = warehouses.map(
-      (warehouse) => {
-        const distance = calculateHaversineDistance(customerCoordinates, {
-          latitude: warehouse.latitude,
-          longitude: warehouse.longitude,
-        });
-
-        return {
-          ...warehouse,
-          distance,
-        };
-      }
+    // Calculate distance and sort
+    const sortedWarehouses = this.calculateDistancesAndSort(
+      warehouses,
+      customerCoordinates
     );
-
-    // Sort all warehouses by distance to find the closest overall
-    allWarehousesWithDistance.sort((a, b) => a.distance - b.distance);
-    const closestWarehouseOverall = allWarehousesWithDistance[0];
+    const closestWarehouseOverall = sortedWarehouses[0];
 
     // Filter warehouses that have sufficient inventory for all order items
-    const warehousesWithInventory = allWarehousesWithDistance.filter(
-      (warehouse) => {
-        return orderItems.every((orderItem) => {
-          const inventory = warehouse.inventory.find(
-            (inv) => inv.productId === orderItem.productId
-          );
-          return inventory && inventory.quantity >= orderItem.quantity;
-        });
-      }
+    const warehousesWithInventory = this.filterByInventory(
+      sortedWarehouses,
+      orderItems
     );
 
     if (warehousesWithInventory.length === 0) {
@@ -106,14 +88,52 @@ export class WarehouseService {
     const selectedWarehouse = warehousesWithInventory[0];
     const distanceKm = Math.round(selectedWarehouse.distance * 10) / 10;
 
-    // Determine selection reason
+    return this.constructSelectionResult(
+      selectedWarehouse,
+      closestWarehouseOverall,
+      orderItems,
+      distanceKm
+    );
+  }
+
+  private calculateDistancesAndSort(
+    warehouses: Array<Warehouse & { inventory: any[] }>,
+    customerCoordinates: Coordinates
+  ): WarehouseWithDistance[] {
+    const warehousesWithDistance = warehouses.map((warehouse) => ({
+      ...warehouse,
+      distance: calculateHaversineDistance(customerCoordinates, {
+        latitude: warehouse.latitude,
+        longitude: warehouse.longitude,
+      }),
+    }));
+
+    return warehousesWithDistance.sort((a, b) => a.distance - b.distance);
+  }
+
+  private filterByInventory(
+    warehouses: WarehouseWithDistance[],
+    orderItems: OrderItemRequest[]
+  ): WarehouseWithDistance[] {
+    return warehouses.filter((warehouse) => {
+      return orderItems.every((orderItem) => {
+        const inventory = warehouse.inventory.find(
+          (inv) => inv.productId === orderItem.productId
+        );
+        return inventory && inventory.quantity >= orderItem.quantity;
+      });
+    });
+  }
+
+  private constructSelectionResult(
+    selectedWarehouse: WarehouseWithDistance,
+    closestWarehouseOverall: WarehouseWithDistance,
+    orderItems: OrderItemRequest[],
+    distanceKm: number
+  ): WarehouseSelectionResult {
     let selectionReason: string;
     let closestExcluded:
-      | {
-          name: string;
-          distanceKm: number;
-          reason: string;
-        }
+      | { name: string; distanceKm: number; reason: string }
       | undefined;
 
     if (selectedWarehouse.id === closestWarehouseOverall.id) {
@@ -121,26 +141,10 @@ export class WarehouseService {
     } else {
       const closestDistanceKm =
         Math.round(closestWarehouseOverall.distance * 10) / 10;
-
-      // Find why the closest warehouse was excluded
-      const missingItems: string[] = [];
-      orderItems.forEach((orderItem) => {
-        const inventory = closestWarehouseOverall.inventory.find(
-          (inv) => inv.productId === orderItem.productId
-        );
-        if (!inventory) {
-          missingItems.push(`Product ${orderItem.productId}`);
-        } else if (inventory.quantity < orderItem.quantity) {
-          missingItems.push(
-            `Product ${orderItem.productId} (only ${inventory.quantity} available, need ${orderItem.quantity})`
-          );
-        }
-      });
-
-      const reason =
-        missingItems.length > 0
-          ? `Missing or insufficient inventory: ${missingItems.join(", ")}`
-          : "Insufficient inventory for all items";
+      const reason = this.getExclusionReason(
+        closestWarehouseOverall,
+        orderItems
+      );
 
       closestExcluded = {
         name: closestWarehouseOverall.name,
@@ -163,5 +167,28 @@ export class WarehouseService {
       distanceKm,
       closestWarehouseExcluded: closestExcluded,
     };
+  }
+
+  private getExclusionReason(
+    warehouse: WarehouseWithDistance,
+    orderItems: OrderItemRequest[]
+  ): string {
+    const missingItems: string[] = [];
+    orderItems.forEach((orderItem) => {
+      const inventory = warehouse.inventory.find(
+        (inv) => inv.productId === orderItem.productId
+      );
+      if (!inventory) {
+        missingItems.push(`Product ${orderItem.productId}`);
+      } else if (inventory.quantity < orderItem.quantity) {
+        missingItems.push(
+          `Product ${orderItem.productId} (only ${inventory.quantity} available, need ${orderItem.quantity})`
+        );
+      }
+    });
+
+    return missingItems.length > 0
+      ? `Missing or insufficient inventory: ${missingItems.join(", ")}`
+      : "Insufficient inventory for all items";
   }
 }

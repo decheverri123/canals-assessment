@@ -5,7 +5,7 @@ import { Coordinates } from '../types/coordinates.types';
  * Mock geocoding service implementation
  * Returns coordinates based on city detection in the address
  */
-export class GeocodingService implements IGeocodingService {
+export class MockGeocodingService implements IGeocodingService {
   private static readonly MOCK_COORDINATES: Record<string, Coordinates> = {
     'new york': { latitude: 40.7128, longitude: -74.0060 },
     'los angeles': { latitude: 34.0522, longitude: -118.2437 },
@@ -22,7 +22,7 @@ export class GeocodingService implements IGeocodingService {
     // In a real implementation, this would call a geocoding API
     const normalized = address.toLowerCase();
     
-    for (const [city, coords] of Object.entries(GeocodingService.MOCK_COORDINATES)) {
+    for (const [city, coords] of Object.entries(MockGeocodingService.MOCK_COORDINATES)) {
       if (normalized.includes(city)) {
         return { ...coords };
       }

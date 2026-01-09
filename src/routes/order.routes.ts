@@ -8,8 +8,8 @@ import { validateCreateOrder } from "../middlewares/validation.middleware";
 import { asyncHandler } from "../middlewares/error-handler.middleware";
 import { prisma } from "../config/database";
 import { OrderService } from "../services/order.service";
-import { GeocodingService } from "../services/geocoding.service";
-import { PaymentService } from "../services/payment.service";
+import { MockGeocodingService } from "../services/geocoding.service";
+import { MockPaymentService } from "../services/payment.service";
 import { WarehouseService } from "../services/warehouse.service";
 
 /**
@@ -20,8 +20,8 @@ const router: Router = Router();
 /**
  * Initialize services and controller
  */
-const geocodingService = new GeocodingService();
-const paymentService = new PaymentService();
+const geocodingService = new MockGeocodingService();
+const paymentService = new MockPaymentService();
 const warehouseService = new WarehouseService(prisma);
 const orderService = new OrderService(prisma, geocodingService, paymentService, warehouseService);
 const orderController = new OrderController(orderService);

@@ -4,7 +4,7 @@ import { IPaymentService, PaymentResult } from '../types/payment.types';
  * Mock payment service implementation
  * Returns success unless amount is 9999 cents (test failure scenario)
  */
-export class PaymentService implements IPaymentService {
+export class MockPaymentService implements IPaymentService {
   // Test failure amount - used in tests to simulate payment failures
   public static readonly TEST_FAILURE_AMOUNT = 9999;
 

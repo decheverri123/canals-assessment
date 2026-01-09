@@ -6,8 +6,8 @@
 import { Request, Response } from 'express';
 import { OrderController } from '../../src/controllers/order.controller';
 import { OrderService } from '../../src/services/order.service';
-import { GeocodingService } from '../../src/services/geocoding.service';
-import { PaymentService } from '../../src/services/payment.service';
+import { MockGeocodingService } from '../../src/services/geocoding.service';
+import { MockPaymentService } from '../../src/services/payment.service';
 import { WarehouseService } from '../../src/services/warehouse.service';
 import { testPrisma } from '../setup';
 import {
@@ -26,8 +26,8 @@ describe('OrderController Integration Tests', () => {
   };
 
   beforeEach(() => {
-    const geocodingService = new GeocodingService();
-    const paymentService = new PaymentService();
+    const geocodingService = new MockGeocodingService();
+    const paymentService = new MockPaymentService();
     const warehouseService = new WarehouseService(testPrisma);
     const orderService = new OrderService(testPrisma, geocodingService, paymentService, warehouseService);
     controller = new OrderController(orderService);

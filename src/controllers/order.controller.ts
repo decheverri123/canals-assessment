@@ -22,4 +22,3 @@ export class OrderController {
     res.status(201).json(response);
   }
 }
-

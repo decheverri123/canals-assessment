@@ -1,218 +1,245 @@
-# Canals Backend Assessment
+# Canals Assessment - Order Management System
 
-Order Management System with Express, Prisma, and PostgreSQL.
+Welcome to the Canals Order Management System! This project is a backend assessment implementing a robust, production-ready Order API with intelligent warehouse selection, inventory management, and external service integration.
 
-## Prerequisites
+## 🚀 Quick Start (Interviewer Track)
 
-- Node.js (LTS version)
-- pnpm
-- Docker and Docker Compose
-
-## Quick Start (Single Command)
-
-**For interviewers and quick setup:**
+The fastest way to evaluate the project is using Docker. This single command sets up the database, runs migrations, seeds data, and starts the API server.
 
 ```bash
 docker-compose up
 ```
-
-That's it! The setup will automatically:
-- Start PostgreSQL database
-- Wait for database to be ready
-- Run database migrations (or push schema if no migrations exist)
-- Seed the database with initial data
-- Start the application server
-
-The API will be available at `http://localhost:3000`
-
-**To run in detached mode:**
-```bash
-docker-compose up -d
-```
-
-**To view logs:**
-```bash
-docker-compose logs -f app
-```
-
-## Setup Instructions
-
-### Option 1: Run Everything with Docker (Recommended)
-
-The Docker setup now handles everything automatically. Just run:
+or
 
 ```bash
-docker-compose up
+docker compose up
 ```
 
-The entrypoint script will:
-1. Wait for the database to be ready
-2. Deploy migrations (or push schema if migrations don't exist)
-3. Seed the database with initial test data
-4. Start the application
+**What happens next?**
+1.  **PostgreSQL** starts on port 5432.
+2.  **Migrations** run automatically to create the schema.
+3.  **Seeding** populates the DB with Products, Warehouses, and Inventory.
+4.  **API Server** starts on `http://localhost:3000`.
 
-**Manual steps (if needed):**
+### Verifying the Setup
 
-If you need to manually run migrations or seed:
+Once the server is running, you can use the **Interactive CLI** to verify functionality without writing `curl` commands manually.
 
+Open a new terminal window:
 ```bash
-# Run migrations manually
-docker-compose exec app pnpm prisma migrate deploy
+# Install local dependencies first (if you haven't)
+pnpm install
 
-# Seed database manually
-docker-compose exec app pnpm prisma:seed
+# Run the interactive CLI
+pnpm cli
 ```
 
-### Option 2: Run PostgreSQL in Docker, App Locally
+---
 
-1. **Start only PostgreSQL:**
-   ```bash
-   docker-compose up -d postgres
-   ```
+## 🛠️ Tech Stack
 
-2. **Create `.env` file:**
-   ```bash
-   DATABASE_URL=postgresql://canals_user:canals_password@localhost:5432/canals_db
-   ```
+*   **Runtime:** Node.js (v18+)
+*   **Framework:** Express.js
+*   **Language:** TypeScript
+*   **Database:** PostgreSQL
+*   **ORM:** Prisma
+*   **Validation:** Zod
+*   **Testing:** Jest & Supertest
+*   **Infrastructure:** Docker & Docker Compose
 
-3. **Install dependencies:**
-   ```bash
-   pnpm install
-   ```
+## 🏗️ Architecture
 
-4. **Generate Prisma client:**
-   ```bash
-   pnpm prisma:generate
-   ```
+The application follows a **Controller-Service-Repository** pattern to ensure separation of concerns and testability.
 
-5. **Run migrations:**
-   ```bash
-   pnpm prisma:migrate
-   ```
+### High-Level Design
 
-6. **Seed the database:**
-   ```bash
-   pnpm prisma:seed
-   ```
+```mermaid
+graph TD
+    Client[Client / API Consumer]
+    
+    subgraph "Application Layer (Express)"
+        App[src/app.ts]
+        Router[src/routes/order.routes.ts]
+        Middleware[Validation Middleware]
+        ErrHandler[Error Handler]
+    end
 
-7. **Start the development server:**
-   ```bash
-   pnpm dev
-   ```
+    subgraph "Controller Layer"
+        OrderCtrl[OrderController]
+    end
 
-## Docker Commands
+    subgraph "Service Layer"
+        GeoSvc[GeocodingService]
+        PaySvc[PaymentService]
+        WarehouseSvc[WarehouseService]
+    end
+    
+    subgraph "Data Layer"
+        Prisma[Prisma Client]
+        DB[(PostgreSQL Database)]
+    end
+    
+    subgraph "Utilities"
+        Haversine[Haversine Formula]
+    end
 
-- **Start services:** `docker-compose up -d`
-- **Stop services:** `docker-compose down`
-- **View logs:** `docker-compose logs -f`
-- **Rebuild app:** `docker-compose build app`
-- **Access app container:** `docker-compose exec app sh`
-- **Access PostgreSQL:** `docker-compose exec postgres psql -U canals_user -d canals_db`
-
-## API Endpoints
-
-### GET /products
-
-Get all available products.
-
-**Response:**
-```json
-[
-  {
-    "id": "product-uuid",
-    "sku": "PROD-001",
-    "name": "Laptop Computer",
-    "price": 129999
-  }
-]
+    Client -->|HTTP Request| App
+    App --> Middleware
+    Middleware --> Router
+    Router --> OrderCtrl
+    
+    OrderCtrl -->|1. Get Coords| GeoSvc
+    OrderCtrl -->|2. Find Warehouse| WarehouseSvc
+    WarehouseSvc -->|Check Inventory| Prisma
+    WarehouseSvc -->|Calc Distance| Haversine
+    
+    OrderCtrl -->|3. Transaction| Prisma
+    Prisma -->|Read/Write| DB
+    
+    OrderCtrl -->|4. Process Payment| PaySvc
+    
+    OrderCtrl -.->|Error| ErrHandler
+    ErrHandler -.->|Response| Client
+    OrderCtrl -.->|Success Response| Client
 ```
 
-### POST /orders
+### Core Components
 
-Create a new order.
+1.  **Controllers (`src/controllers`)**: Handle HTTP requests, input validation (via Zod middleware), and response formatting.
+2.  **Services (`src/services`)**: Contain business logic.
+    *   **`OrderService`**: Orchestrates order creation.
+    *   **`WarehouseService`**: Implements the "closest warehouse with complete inventory" algorithm.
+    *   **`GeocodingService`**: Mocks address-to-coordinate conversion.
+    *   **`PaymentService`**: Mocks external payment processing.
+3.  **Data Layer (`prisma/`)**: Manages database interactions using Prisma Client.
 
-**Request:**
-```json
-{
-  "customer": {
-    "email": "customer@example.com"
-  },
-  "address": "123 Main St, New York, NY 10001",
-  "items": [
+### Key Design Decisions
+
+*   **Atomic Transactions**: Inventory deduction and order creation happen within a `prisma.$transaction`. This ensures consistency—we never create an order without successfully reserving stock.
+*   **Strict Inventory Check**: An order is only fulfilled if a *single* warehouse can provide all items. This simplifies the MVP but mirrors real-world constraints for specific shipping classes.
+*   **Payment Flow**: Payment is processed *after* the database transaction commits the order as `PENDING`. If payment fails, the user gets an error, and the order remains `PENDING` (safe state) rather than rolling back the entire database record, allowing for retry logic or audit trails.
+*   **Haversine Formula**: Used to calculate the great-circle distance between the customer and warehouses to minimize shipping costs/time.
+
+---
+
+## 🖥️ Interactive CLI
+
+The project includes a custom CLI tool to make manual testing effortless.
+
+**Command:** `pnpm cli`
+
+**Features:**
+*   fetches and displays available **Products**.
+*   Walks you through building an **Order** (selecting items, quantities).
+*   Lets you choose from **Pre-defined Addresses** (mapped to different regions to test warehouse selection).
+*   Displays **Live Inventory** status from warehouses.
+*   Generates and executes the corresponding `curl` command.
+*   Shows the raw JSON response.
+
+---
+
+## 📡 API Reference
+
+### 1. Get Products
+Returns the catalog of available items.
+
+*   **Endpoint:** `GET /products`
+*   **Response:**
+    ```json
+    [
+      { "id": "uuid...", "name": "Laptop", "price": 129999, "sku": "PROD-001" }
+    ]
+    ```
+
+### 2. Create Order
+Creates a new order, validates stock, and processes payment.
+
+*   **Endpoint:** `POST /orders`
+*   **Body:**
+    ```json
     {
-      "productId": "product-uuid",
-      "quantity": 2
+      "customer": { "email": "test@canals.ai" },
+      "address": "123 Main St, New York, NY",
+      "paymentDetails": { "creditCard": "4111111111111111" },
+      "items": [
+        { "productId": "uuid...", "quantity": 1 }
+      ]
     }
-  ]
-}
-```
+    ```
+*   **Response (201 Created):**
+    ```json
+    {
+      "id": "order-uuid",
+      "status": "PAID",
+      "warehouse": { "name": "East Coast Warehouse" },
+      "totalAmount": 129999
+    }
+    ```
 
-**Response:**
-```json
-{
-  "id": "order-uuid",
-  "customerEmail": "customer@example.com",
-  "shippingAddress": "123 Main St, New York, NY 10001",
-  "totalAmount": 5000,
-  "status": "PAID",
-  "orderItems": [...]
-}
-```
+For more detailed `curl` examples, see [API_COMMANDS.md](./API_COMMANDS.md).
 
-## Testing
+---
 
-This project includes focused tests for the core business logic and critical flows. While comprehensive testing wasn't required for this assessment, I've included tests that were essential to my development process:
+## 🧪 Testing
 
-### What's Tested
-
-**Integration Tests (11 tests):**
-- Order creation happy path (end-to-end)
-- Multi-item orders
-- Payment failure handling
-- Insufficient inventory scenarios
-- Warehouse selection with multiple locations
-
-**Unit Tests (8 tests):**
-- Warehouse selection algorithm (the most complex business logic)
-- Distance calculation (Haversine formula)
-
-### Why These Tests
-
-These tests helped me during development to:
-1. Verify the warehouse selection algorithm works correctly
-2. Ensure transaction handling prevents race conditions
-3. Validate payment failure doesn't create orphaned orders
-4. Confirm inventory deduction happens atomically
-
-The tests cover the **business-critical paths** and **edge cases that could cause production issues**, rather than testing framework behavior or validation logic.
-
-### Running Tests
+The project includes focused Integration and Unit tests covering critical business logic.
 
 ```bash
 # Run all tests
 pnpm test
 
-# Run with coverage
+# Run tests with coverage report
 pnpm test:coverage
 ```
 
-**Test Coverage:** ~85% of business logic, focused on correctness over completeness.
+### Coverage Highlights
+*   **Warehouse Selection:** Verifies that the closest warehouse with *all* items is chosen.
+*   **Concurrency:** Tests that inventory is not oversold during simultaneous requests.
+*   **Error Handling:** Validates behavior when payment fails or inventory is insufficient.
 
-### Using Command Line Scripts
+---
 
-See `scripts/README.md` for detailed information about test scripts:
+## 📂 Project Structure
 
-```bash
-# TypeScript script (recommended)
-pnpm test:order
-
-# Shell script
-./scripts/test-order.sh <product-id-1> <product-id-2>
+```
+.
+├── cli/                # Interactive CLI tool source code
+├── prisma/             # Database schema, migrations, and seed script
+├── src/
+│   ├── config/         # App configuration (env vars, DB connection)
+│   ├── controllers/    # Request handlers
+│   ├── middlewares/    # Error handling & Validation (Zod)
+│   ├── routes/         # Express route definitions
+│   ├── services/       # Business logic (Geocoding, Payment, Warehouse)
+│   └── types/          # TypeScript type definitions
+├── tests/              # Jest test suite (Integration & Unit)
+└── docker-compose.yml  # Container orchestration
 ```
 
-### Test Scenarios
+## 🔧 Manual Setup (Local Dev)
 
-- **Payment failure test:** Create an order totaling exactly $99.99 (9999 cents) to trigger payment failure
-- **Warehouse selection:** Test with different shipping addresses to see which warehouse is selected
-- **Split shipment error:** Try ordering items that exist only in different warehouses
-- **Inventory validation:** Order more items than available to test error handling
+If you prefer running without Docker Compose for the app:
+
+1.  **Start Postgres:**
+    ```bash
+    docker-compose up -d postgres
+    ```
+2.  **Configure Env:**
+    Copy `.env.example` to `.env` (defaults are set for local Docker Postgres).
+3.  **Install Deps:**
+    ```bash
+    pnpm install
+    ```
+4.  **Migrate & Seed:**
+    ```bash
+    pnpm prisma migrate dev
+    ```
+5.  **Start Server:**
+    ```bash
+    pnpm dev
+    ```
+
+## 🐛 Troubleshooting
+
+*   **"No products available" in CLI:** Ensure you ran migrations/seeding (`pnpm prisma:migrate` or restart the Docker container).
+*   **Database connection refused:** Ensure the `postgres` container is healthy (`docker ps`) and your `.env` `DATABASE_URL` matches the exposed port.
