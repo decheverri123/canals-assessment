@@ -15,28 +15,33 @@ export class PaymentService implements IPaymentService {
    * @param _description Description of the payment (e.g. Order ID)
    * @returns Promise resolving to payment result
    */
-  async processPayment(
-    cardNumber: string,
-    amount: number,
-    _description: string
-  ): Promise<PaymentResult> {
-    // Basic card number validation
-    const cleanCard = cardNumber.replace(/\s|-/g, '');
-    if (!/^\d{16,19}$/.test(cleanCard)) {
-      return { 
+  async processPayment(_cardNumber: string, amount: number, _description: string): Promise<PaymentResult> {
+    // Mock implementation: return failure if amount is 9999 cents (test scenario)
+    // In a real implementation, this would call a payment gateway API
+    if (amount === 9999) {
+      return {
         success: false,
-        error: 'INVALID_CARD'
       };
     }
-    
-    // Test failure scenario
-    if (amount === PaymentService.TEST_FAILURE_AMOUNT) {
-      return { 
-        success: false,
-        error: 'CARD_DECLINED'
-      };
-    }
-    
-    return { success: true };
+
+    return {
+      success: true,
+      transactionId: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    };
+  }
+
+  /**
+   * Refund a payment
+   * @param transactionId The transaction ID to refund
+   * @param _amount The amount to refund
+   * @param _reason Reason for refund
+   * @returns Promise resolving to refund result
+   */
+  async refundPayment(transactionId: string, _amount: number, _reason: string): Promise<PaymentResult> {
+    console.log(`Processing refund for transaction ${transactionId}`);
+    return {
+      success: true,
+      transactionId: `ref_${transactionId}`,
+    };
   }
 }

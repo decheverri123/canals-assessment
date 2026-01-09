@@ -8,9 +8,16 @@ export interface IPaymentService {
     amount: number,
     description: string
   ): Promise<PaymentResult>;
+
+  refundPayment(
+    transactionId: string,
+    amount: number,
+    reason: string
+  ): Promise<PaymentResult>;
 }
 
 export interface PaymentResult {
   success: boolean;
+  transactionId?: string;
   error?: string;
 }
