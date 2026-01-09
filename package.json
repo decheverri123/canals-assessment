@@ -18,7 +18,8 @@
     "test:distance-tiebreaker": "ts-node scripts/test-distance-tiebreaker.ts",
     "test:no-split": "ts-node scripts/test-no-split-shipments.ts",
     "test:partial-stock": "ts-node scripts/test-partial-stock.ts",
-    "cli": "ts-node cli/index.ts"
+    "cli": "ts-node cli/index.ts",
+    "docker:restart": "docker compose down && docker compose build --no-cache app && docker compose up"
   },
   "keywords": [],
   "author": "",
