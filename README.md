@@ -24,10 +24,6 @@ That's it! The setup will automatically:
 - Start the application server
 
 The API will be available at `http://localhost:3000`
-<<<<<<< HEAD
-The web interface will be available at `http://localhost:3000` (serves `public/index.html`)
-=======
->>>>>>> origin/main
 
 **To run in detached mode:**
 ```bash
@@ -113,28 +109,6 @@ docker-compose exec app pnpm prisma:seed
 - **Access app container:** `docker-compose exec app sh`
 - **Access PostgreSQL:** `docker-compose exec postgres psql -U canals_user -d canals_db`
 
-<<<<<<< HEAD
-## Web Interface
-
-A simple, intuitive web interface is available for testing orders:
-
-1. **Start the server:**
-   ```bash
-   pnpm dev
-   ```
-
-2. **Open your browser:**
-   Navigate to `http://localhost:3000`
-
-The interface allows you to:
-- View all available products
-- Select products and quantities
-- Create orders with a visual form
-- See formatted order results
-- Test different scenarios easily
-
-=======
->>>>>>> origin/main
 ## API Endpoints
 
 ### GET /products
@@ -187,16 +161,6 @@ Create a new order.
 
 ## Testing
 
-<<<<<<< HEAD
-### Using the Web Interface
-
-The easiest way to test is using the web interface at `http://localhost:3000`:
-- Select products and quantities visually
-- See real-time order totals
-- View formatted order results
-
-=======
->>>>>>> origin/main
 ### Using Command Line Scripts
 
 See `scripts/README.md` for detailed information about test scripts:

@@ -2,14 +2,14 @@
  * Order controller for handling order creation
  */
 
-import { Request, Response } from 'express';
-import { PrismaClient, OrderStatus } from '@prisma/client';
-import { CreateOrderRequest } from '../middlewares/validation.middleware';
-import { GeocodingService } from '../services/geocoding.service';
-import { PaymentService } from '../services/payment.service';
-import { WarehouseService } from '../services/warehouse.service';
-import { BusinessError } from '../middlewares/error-handler.middleware';
-import { OrderResponse } from '../types/order.types';
+import { Request, Response } from "express";
+import { PrismaClient, OrderStatus } from "@prisma/client";
+import { CreateOrderRequest } from "../middlewares/validation.middleware";
+import { GeocodingService } from "../services/geocoding.service";
+import { PaymentService } from "../services/payment.service";
+import { WarehouseService } from "../services/warehouse.service";
+import { BusinessError } from "../middlewares/error-handler.middleware";
+import { OrderResponse } from "../types/order.types";
 
 /**
  * Order controller class
@@ -31,23 +31,19 @@ export class OrderController {
    * 1. Geocode shipping address
    * 2. Find closest warehouse with all items
    * 3. Calculate total amount
-<<<<<<< HEAD
-   * 4. Create order and order items in a transaction
-   * 5. Process payment
-   * 6. Update order status based on payment result
-=======
    * 4. Create order and order items in a transaction (deducts inventory)
    * 5. Process payment
    * 6. Update order status based on payment result:
    *    - If payment succeeds: mark order as PAID
    *    - If payment fails: restore inventory and mark order as FAILED
->>>>>>> origin/main
    */
   async createOrder(req: Request, res: Response): Promise<void> {
     const validatedData: CreateOrderRequest = req.body;
 
     // Step 1: Geocode shipping address
-    const coordinates = await this.geocodingService.geocode(validatedData.address);
+    const coordinates = await this.geocodingService.geocode(
+      validatedData.address
+    );
 
     // Step 2: Find closest warehouse with all items
     const warehouse = await this.warehouseService.findClosestWarehouse(
@@ -73,9 +69,9 @@ export class OrderController {
       const foundIds = products.map((p) => p.id);
       const missingIds = productIds.filter((id) => !foundIds.includes(id));
       throw new BusinessError(
-        `Products not found: ${missingIds.join(', ')}`,
+        `Products not found: ${missingIds.join(", ")}`,
         404,
-        'PRODUCTS_NOT_FOUND'
+        "PRODUCTS_NOT_FOUND"
       );
     }
 
@@ -84,7 +80,11 @@ export class OrderController {
     for (const item of validatedData.items) {
       const product = products.find((p) => p.id === item.productId);
       if (!product) {
-        throw new BusinessError(`Product not found: ${item.productId}`, 404, 'PRODUCT_NOT_FOUND');
+        throw new BusinessError(
+          `Product not found: ${item.productId}`,
+          404,
+          "PRODUCT_NOT_FOUND"
+        );
       }
       totalAmount += product.price * item.quantity;
     }
@@ -115,7 +115,7 @@ export class OrderController {
           throw new BusinessError(
             `Product ${item.productId} not available in warehouse ${warehouse.id}`,
             400,
-            'INVENTORY_NOT_AVAILABLE'
+            "INVENTORY_NOT_AVAILABLE"
           );
         }
 
@@ -123,7 +123,7 @@ export class OrderController {
           throw new BusinessError(
             `Insufficient inventory for product ${item.productId}. Available: ${inventory.quantity}, Requested: ${item.quantity}`,
             400,
-            'INSUFFICIENT_INVENTORY'
+            "INSUFFICIENT_INVENTORY"
           );
         }
       }
@@ -178,14 +178,15 @@ export class OrderController {
     // Step 5: Process payment (after transaction commits)
     const { creditCard } = validatedData.paymentDetails;
     const description = `Order ${order.id}`;
-    
-    const paymentResult = await this.paymentService.processPayment(creditCard, totalAmount, description);
+
+    const paymentResult = await this.paymentService.processPayment(
+      creditCard,
+      totalAmount,
+      description
+    );
 
     // Step 6: Update order status based on payment result
     if (!paymentResult.success) {
-<<<<<<< HEAD
-      // Payment failed - order remains PENDING
-=======
       // Payment failed - restore inventory and mark order as FAILED
       await this.prisma.$transaction(async (tx) => {
         // Restore inventory quantities
@@ -218,8 +219,11 @@ export class OrderController {
         });
       });
 
->>>>>>> origin/main
-      throw new BusinessError('Payment processing failed', 402, 'PAYMENT_FAILED');
+      throw new BusinessError(
+        "Payment processing failed",
+        402,
+        "PAYMENT_FAILED"
+      );
     }
 
     // Payment succeeded - update order status to PAID
@@ -255,10 +259,6 @@ export class OrderController {
       orderItems: updatedOrder.orderItems.map((item) => ({
         id: item.id,
         productId: item.productId,
-<<<<<<< HEAD
-        productName: item.product.name,
-=======
->>>>>>> origin/main
         quantity: item.quantity,
         priceAtPurchase: item.priceAtPurchase,
       })),
