@@ -53,11 +53,13 @@ describe("WarehouseService", () => {
           customerCoordinates
         );
 
-        expect(result.id).toBe(warehouse.id);
-        expect(result.name).toBe(warehouse.name);
-        expect(result.address).toBe(warehouse.address);
-        expect(result.latitude).toBe(warehouse.latitude);
-        expect(result.longitude).toBe(warehouse.longitude);
+        expect(result.warehouse.id).toBe(warehouse.id);
+        expect(result.warehouse.name).toBe(warehouse.name);
+        expect(result.warehouse.address).toBe(warehouse.address);
+        expect(result.warehouse.latitude).toBe(warehouse.latitude);
+        expect(result.warehouse.longitude).toBe(warehouse.longitude);
+        expect(result.selectionReason).toBeDefined();
+        expect(result.distanceKm).toBeGreaterThanOrEqual(0);
       });
 
       it("should return warehouse with exact inventory match", async () => {
@@ -79,7 +81,7 @@ describe("WarehouseService", () => {
           customerCoordinates
         );
 
-        expect(result.id).toBe(warehouse.id);
+        expect(result.warehouse.id).toBe(warehouse.id);
       });
     });
 
@@ -125,8 +127,8 @@ describe("WarehouseService", () => {
         );
 
         // Should select NYC warehouse (closer)
-        expect(result.id).toBe(warehouse1.id);
-        expect(result.name).toBe("NYC Warehouse");
+        expect(result.warehouse.id).toBe(warehouse1.id);
+        expect(result.warehouse.name).toBe("NYC Warehouse");
       });
 
       it("should select closest warehouse when warehouses are at different distances", async () => {
@@ -180,7 +182,7 @@ describe("WarehouseService", () => {
         );
 
         // Should select the closest warehouse
-        expect(result.id).toBe(warehouse1.id);
+        expect(result.warehouse.id).toBe(warehouse1.id);
       });
 
       it("should handle multiple products and select closest warehouse with all items", async () => {
@@ -239,7 +241,7 @@ describe("WarehouseService", () => {
         );
 
         // Should select warehouse 1 (closer and has both products)
-        expect(result.id).toBe(warehouse1.id);
+        expect(result.warehouse.id).toBe(warehouse1.id);
       });
     });
 
@@ -436,7 +438,7 @@ describe("WarehouseService", () => {
         );
 
         expect(result).toBeDefined();
-        expect(result.id).toBe(warehouse.id);
+        expect(result.warehouse.id).toBe(warehouse.id);
       });
 
       it("should handle zero quantity (edge case)", async () => {
@@ -459,7 +461,7 @@ describe("WarehouseService", () => {
           customerCoordinates
         );
 
-        expect(result.id).toBe(warehouse.id);
+        expect(result.warehouse.id).toBe(warehouse.id);
       });
 
       it("should handle multiple items where one has insufficient inventory", async () => {
@@ -518,10 +520,10 @@ describe("WarehouseService", () => {
           customerCoordinates
         );
 
-        expect(result.id).toBe(warehouse.id);
+        expect(result.warehouse.id).toBe(warehouse.id);
       });
 
-      it("should return warehouse without distance and inventory properties", async () => {
+      it("should return warehouse selection result with metadata", async () => {
         const product = await createTestProduct();
         const warehouse = await createTestWarehouse();
         await createTestInventory({
@@ -540,14 +542,17 @@ describe("WarehouseService", () => {
           customerCoordinates
         );
 
-        // Should only have Warehouse properties, not distance or inventory
-        expect(result).toHaveProperty("id");
-        expect(result).toHaveProperty("name");
-        expect(result).toHaveProperty("address");
-        expect(result).toHaveProperty("latitude");
-        expect(result).toHaveProperty("longitude");
-        expect(result).not.toHaveProperty("distance");
-        expect(result).not.toHaveProperty("inventory");
+        // Should have warehouse selection result structure
+        expect(result).toHaveProperty("warehouse");
+        expect(result).toHaveProperty("selectionReason");
+        expect(result).toHaveProperty("distanceKm");
+        expect(result.warehouse).toHaveProperty("id");
+        expect(result.warehouse).toHaveProperty("name");
+        expect(result.warehouse).toHaveProperty("address");
+        expect(result.warehouse).toHaveProperty("latitude");
+        expect(result.warehouse).toHaveProperty("longitude");
+        expect(result.warehouse).not.toHaveProperty("distance");
+        expect(result.warehouse).not.toHaveProperty("inventory");
       });
     });
   });

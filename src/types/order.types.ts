@@ -16,6 +16,13 @@ export interface WarehouseResponse {
   id: string;
   name: string;
   address: string;
+  selectionReason?: string;
+  distanceKm?: number;
+  closestWarehouseExcluded?: {
+    name: string;
+    distanceKm: number;
+    reason: string;
+  };
 }
 
 /**

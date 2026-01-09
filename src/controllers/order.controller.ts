@@ -46,13 +46,14 @@ export class OrderController {
     );
 
     // Step 2: Find closest warehouse with all items
-    const warehouse = await this.warehouseService.findClosestWarehouse(
+    const warehouseSelection = await this.warehouseService.findClosestWarehouse(
       validatedData.items,
       {
         latitude: coordinates.latitude,
         longitude: coordinates.longitude,
       }
     );
+    const warehouse = warehouseSelection.warehouse;
 
     // Step 3: Fetch products and calculate total amount
     const productIds = validatedData.items.map((item) => item.productId);
@@ -89,7 +90,24 @@ export class OrderController {
       totalAmount += product.price * item.quantity;
     }
 
-    // Step 4: Create order and order items in a transaction
+    // Step 4: Process payment FIRST (before deducting inventory)
+    const { creditCard } = validatedData.paymentDetails;
+    const paymentResult = await this.paymentService.processPayment(
+      creditCard,
+      totalAmount,
+      `Order for ${validatedData.customer.email}`
+    );
+
+    if (!paymentResult.success) {
+      // Payment failed - don't deduct inventory or create order
+      throw new BusinessError(
+        "Payment processing failed",
+        402,
+        "PAYMENT_FAILED"
+      );
+    }
+
+    // Step 5: Create order and order items in a transaction (only if payment succeeded)
     // Use interactive transaction to ensure atomicity
     const order = await this.prisma.$transaction(async (tx) => {
       // Re-check inventory levels inside transaction
@@ -147,13 +165,13 @@ export class OrderController {
         )
       );
 
-      // Create Order with PENDING status
+      // Create Order with PAID status (payment already succeeded)
       const newOrder = await tx.order.create({
         data: {
           customerEmail: validatedData.customer.email,
           shippingAddress: validatedData.address,
           totalAmount,
-          status: OrderStatus.PENDING,
+          status: OrderStatus.PAID,
         },
       });
 
@@ -175,64 +193,10 @@ export class OrderController {
       return newOrder;
     });
 
-    // Step 5: Process payment (after transaction commits)
-    const { creditCard } = validatedData.paymentDetails;
-    const description = `Order ${order.id}`;
-
-    const paymentResult = await this.paymentService.processPayment(
-      creditCard,
-      totalAmount,
-      description
-    );
-
-    // Step 6: Update order status based on payment result
-    if (!paymentResult.success) {
-      // Payment failed - restore inventory and mark order as FAILED
-      await this.prisma.$transaction(async (tx) => {
-        // Restore inventory quantities
-        await Promise.all(
-          validatedData.items.map((item) =>
-            tx.inventory.update({
-              where: {
-                warehouseId_productId: {
-                  warehouseId: warehouse.id,
-                  productId: item.productId,
-                },
-              },
-              data: {
-                quantity: {
-                  increment: item.quantity,
-                },
-              },
-            })
-          )
-        );
-
-        // Mark order as FAILED
-        await tx.order.update({
-          where: {
-            id: order.id,
-          },
-          data: {
-            status: OrderStatus.FAILED,
-          },
-        });
-      });
-
-      throw new BusinessError(
-        "Payment processing failed",
-        402,
-        "PAYMENT_FAILED"
-      );
-    }
-
-    // Payment succeeded - update order status to PAID
-    const updatedOrder = await this.prisma.order.update({
+    // Step 6: Fetch order with items for response
+    const orderWithItems = await this.prisma.order.findUnique({
       where: {
         id: order.id,
-      },
-      data: {
-        status: OrderStatus.PAID,
       },
       include: {
         orderItems: {
@@ -243,20 +207,27 @@ export class OrderController {
       },
     });
 
+    if (!orderWithItems) {
+      throw new BusinessError("Order not found after creation", 500, "ORDER_NOT_FOUND");
+    }
+
     // Step 7: Return order with items and warehouse information
     const response: OrderResponse = {
-      id: updatedOrder.id,
-      customerEmail: updatedOrder.customerEmail,
-      shippingAddress: updatedOrder.shippingAddress,
-      totalAmount: updatedOrder.totalAmount,
-      status: updatedOrder.status,
-      createdAt: updatedOrder.createdAt,
+      id: orderWithItems.id,
+      customerEmail: orderWithItems.customerEmail,
+      shippingAddress: orderWithItems.shippingAddress,
+      totalAmount: orderWithItems.totalAmount,
+      status: orderWithItems.status,
+      createdAt: orderWithItems.createdAt,
       warehouse: {
         id: warehouse.id,
         name: warehouse.name,
         address: warehouse.address,
+        selectionReason: warehouseSelection.selectionReason,
+        distanceKm: warehouseSelection.distanceKm,
+        closestWarehouseExcluded: warehouseSelection.closestWarehouseExcluded,
       },
-      orderItems: updatedOrder.orderItems.map((item) => ({
+      orderItems: orderWithItems.orderItems.map((item) => ({
         id: item.id,
         productId: item.productId,
         quantity: item.quantity,
