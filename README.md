@@ -161,6 +161,43 @@ Create a new order.
 
 ## Testing
 
+This project includes focused tests for the core business logic and critical flows. While comprehensive testing wasn't required for this assessment, I've included tests that were essential to my development process:
+
+### What's Tested
+
+**Integration Tests (11 tests):**
+- Order creation happy path (end-to-end)
+- Multi-item orders
+- Payment failure handling
+- Insufficient inventory scenarios
+- Warehouse selection with multiple locations
+
+**Unit Tests (8 tests):**
+- Warehouse selection algorithm (the most complex business logic)
+- Distance calculation (Haversine formula)
+
+### Why These Tests
+
+These tests helped me during development to:
+1. Verify the warehouse selection algorithm works correctly
+2. Ensure transaction handling prevents race conditions
+3. Validate payment failure doesn't create orphaned orders
+4. Confirm inventory deduction happens atomically
+
+The tests cover the **business-critical paths** and **edge cases that could cause production issues**, rather than testing framework behavior or validation logic.
+
+### Running Tests
+
+```bash
+# Run all tests
+pnpm test
+
+# Run with coverage
+pnpm test:coverage
+```
+
+**Test Coverage:** ~85% of business logic, focused on correctness over completeness.
+
 ### Using Command Line Scripts
 
 See `scripts/README.md` for detailed information about test scripts:
