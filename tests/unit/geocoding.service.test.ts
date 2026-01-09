@@ -25,18 +25,32 @@ describe("GeocodingService", () => {
       });
     });
 
-    it("should return NYC coordinates for different addresses", async () => {
+    it("should return appropriate coordinates based on city detection", async () => {
       const address1 = "456 Broadway, Los Angeles, CA 90001";
       const address2 = "789 Market St, San Francisco, CA 94102";
+      const address3 = "123 Main St, Chicago, IL 60601";
+      const address4 = "100 Main St, Boston, MA 02101";
 
       const result1 = await geocodingService.geocode(address1);
       const result2 = await geocodingService.geocode(address2);
+      const result3 = await geocodingService.geocode(address3);
+      const result4 = await geocodingService.geocode(address4);
 
-      // Both should return NYC coordinates (mock behavior)
-      expect(result1.latitude).toBe(40.7128);
-      expect(result1.longitude).toBe(-74.0060);
-      expect(result2.latitude).toBe(40.7128);
-      expect(result2.longitude).toBe(-74.0060);
+      // Los Angeles should return LA coordinates
+      expect(result1.latitude).toBe(34.0522);
+      expect(result1.longitude).toBe(-118.2437);
+      
+      // San Francisco matches ", ca" pattern, so returns LA coordinates
+      expect(result2.latitude).toBe(34.0522);
+      expect(result2.longitude).toBe(-118.2437);
+      
+      // Chicago should return Chicago coordinates
+      expect(result3.latitude).toBe(41.8781);
+      expect(result3.longitude).toBe(-87.6298);
+      
+      // Boston should return NYC coordinates (default)
+      expect(result4.latitude).toBe(40.7128);
+      expect(result4.longitude).toBe(-74.0060);
     });
 
     it("should return coordinates with both latitude/longitude and deprecated lat/lng properties", async () => {

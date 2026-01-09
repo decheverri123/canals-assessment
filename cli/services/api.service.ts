@@ -4,7 +4,7 @@
  */
 
 import { DEFAULTS } from '../config/defaults';
-import type { Product, OrderRequest, OrderResponse, ApiError } from '../types/cli.types';
+import type { Product, OrderRequest, OrderResponse, ApiError, Warehouse } from '../types/cli.types';
 
 /**
  * Result containing both parsed response and raw data
@@ -40,6 +40,20 @@ export async function fetchProducts(): Promise<Product[]> {
   }
 
   return response.json() as Promise<Product[]>;
+}
+
+/**
+ * Fetch all warehouses with their inventory from the API
+ */
+export async function fetchWarehouses(): Promise<Warehouse[]> {
+  const response = await fetch(`${DEFAULTS.apiUrl}/warehouses`);
+
+  if (!response.ok) {
+    const error = (await response.json()) as ApiError;
+    throw new Error(error.error || `Failed to fetch warehouses: ${response.status}`);
+  }
+
+  return response.json() as Promise<Warehouse[]>;
 }
 
 /**

@@ -10,11 +10,11 @@ import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import ora from 'ora';
 
-import { fetchProducts, submitOrder } from './services/api.service';
+import { fetchProducts, fetchWarehouses, submitOrder } from './services/api.service';
 import { selectProducts, setQuantities } from './prompts/product.prompt';
 import { promptCustomerInfo } from './prompts/customer.prompt';
 import { promptPaymentInfo } from './prompts/payment.prompt';
-import { displayOrderSummary, displayOrderSuccess, displayError, displayCurlCommand, displayRawResponse } from './ui/formatter';
+import { displayOrderSummary, displayOrderSuccess, displayError, displayCurlCommand, displayRawResponse, displayWarehouseInventory } from './ui/formatter';
 import { generateCurlCommand } from './services/api.service';
 import type { OrderRequest, Product } from './types/cli.types';
 
@@ -58,6 +58,22 @@ async function main(): Promise<void> {
 
     // Step 3: Get customer info
     const customerInfo = await promptCustomerInfo();
+
+    // Step 3.5: Fetch and display warehouse inventory
+    const fetchWarehouseSpinner = ora('Fetching warehouse inventory...').start();
+    try {
+      const warehouses = await fetchWarehouses();
+      fetchWarehouseSpinner.succeed(pc.green(`Loaded ${warehouses.length} warehouses`));
+      
+      // Display warehouse inventory overview
+      displayWarehouseInventory(warehouses, orderItems, customerInfo.address);
+    } catch (error) {
+      fetchWarehouseSpinner.fail(pc.yellow('Could not fetch warehouse inventory'));
+      // Continue anyway - this is just informational
+      if (process.env.DEBUG) {
+        console.error(error);
+      }
+    }
 
     // Step 4: Get payment info
     const paymentInfo = await promptPaymentInfo();
