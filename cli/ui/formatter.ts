@@ -4,8 +4,30 @@
  */
 
 import pc from 'picocolors';
-import type { OrderItem, OrderResponse } from '../types/cli.types';
+import type { OrderItem, OrderResponse, Warehouse } from '../types/cli.types';
 import { maskCreditCard } from '../prompts/payment.prompt';
+
+/**
+ * Calculate distance between two coordinates using Haversine formula
+ */
+function calculateDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
 /**
  * Format price from cents to dollars
@@ -174,4 +196,126 @@ function colorizeJson(jsonString: string): string {
     .replace(/: (true|false)/g, `: ${pc.magenta('$1')}`)
     // Colorize null
     .replace(/: (null)/g, `: ${pc.dim('$1')}`);
+}
+
+/**
+ * Geocode address to coordinates (matching server-side logic)
+ */
+function geocodeAddress(address: string): { latitude: number; longitude: number } {
+  const addressLower = address.toLowerCase();
+
+  if (
+    addressLower.includes('los angeles') ||
+    addressLower.includes('la,') ||
+    (addressLower.includes(', ca') && !addressLower.includes('sacramento'))
+  ) {
+    return { latitude: 34.0522, longitude: -118.2437 };
+  }
+
+  if (addressLower.includes('chicago') || addressLower.includes(', il')) {
+    return { latitude: 41.8781, longitude: -87.6298 };
+  }
+
+  return { latitude: 40.7128, longitude: -74.0060 };
+}
+
+/**
+ * Display warehouse inventory overview
+ * Shows all warehouses with inventory for selected products
+ */
+export function displayWarehouseInventory(
+  warehouses: Warehouse[],
+  selectedItems: OrderItem[],
+  customerAddress: string
+): void {
+  const divider = pc.dim('-'.repeat(70));
+  const customerCoords = geocodeAddress(customerAddress);
+
+  console.log('');
+  console.log(pc.bold(pc.cyan('[📦] Warehouse Inventory Overview')));
+  console.log(divider);
+
+  // Calculate distances and determine which warehouse would be selected
+  const warehousesWithDistance = warehouses.map((warehouse) => {
+    const distance = calculateDistance(
+      customerCoords.latitude,
+      customerCoords.longitude,
+      warehouse.latitude,
+      warehouse.longitude
+    );
+
+    // Check if warehouse has all selected items
+    const hasAllItems = selectedItems.every((item) => {
+      const inventory = warehouse.inventory.find(
+        (inv) => inv.productId === item.product.id
+      );
+      return inventory && inventory.quantity >= item.quantity;
+    });
+
+    return {
+      warehouse,
+      distance,
+      hasAllItems,
+    };
+  });
+
+  // Sort by distance
+  warehousesWithDistance.sort((a, b) => a.distance - b.distance);
+
+  // Find the selected warehouse (closest with all items)
+  const selectedWarehouse = warehousesWithDistance.find((w) => w.hasAllItems);
+
+  // Display each warehouse
+  for (const { warehouse, distance, hasAllItems } of warehousesWithDistance) {
+    const isSelected = selectedWarehouse?.warehouse.id === warehouse.id;
+    const distanceStr = `${distance.toFixed(1)} km`;
+    const statusBadge = isSelected
+      ? pc.bgGreen(pc.black(' SELECTED '))
+      : hasAllItems
+      ? pc.bgYellow(pc.black(' AVAILABLE '))
+      : pc.bgRed(pc.white(' INSUFFICIENT '));
+
+    console.log('');
+    console.log(
+      `   ${pc.bold(warehouse.name)} ${statusBadge} ${pc.dim(`(${distanceStr})`)}`
+    );
+    console.log(`   ${pc.dim(warehouse.address)}`);
+
+    // Display inventory for selected products
+    console.log(`   ${pc.dim('Inventory:')}`);
+    for (const item of selectedItems) {
+      const inventory = warehouse.inventory.find(
+        (inv) => inv.productId === item.product.id
+      );
+      const available = inventory?.quantity ?? 0;
+      const requested = item.quantity;
+      const hasEnough = available >= requested;
+
+      const productLine = `     • ${item.product.name}:`;
+      const inventoryDisplay = hasEnough
+        ? pc.green(`${requested}/${available}`)
+        : pc.red(`${requested}/${available}`);
+
+      console.log(`${productLine.padEnd(45)} ${inventoryDisplay}`);
+    }
+  }
+
+  if (selectedWarehouse) {
+    console.log('');
+    console.log(
+      pc.dim(
+        `   → Order will be fulfilled from: ${pc.cyan(selectedWarehouse.warehouse.name)}`
+      )
+    );
+  } else {
+    console.log('');
+    console.log(
+      pc.red(
+        '   ⚠ No single warehouse has all requested items in sufficient quantity'
+      )
+    );
+  }
+
+  console.log('');
+  console.log(divider);
 }

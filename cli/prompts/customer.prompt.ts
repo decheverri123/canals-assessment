@@ -52,7 +52,6 @@ export async function promptEmail(): Promise<string> {
  * Pre-defined addresses that map to different warehouses
  */
 const PREDEFINED_ADDRESSES = [
-  { label: '123 Main St, New York, NY 10001', value: '123 Main St, New York, NY 10001' }, // East Coast Warehouse
   { label: '456 Sunset Blvd, Los Angeles, CA 90028', value: '456 Sunset Blvd, Los Angeles, CA 90028' }, // West Coast Warehouse
   { label: '789 Michigan Ave, Chicago, IL 60611', value: '789 Michigan Ave, Chicago, IL 60611' }, // Central Warehouse
   { label: '321 State St, Albany, NY 12207', value: '321 State St, Albany, NY 12207' }, // East Coast Warehouse (closer to NYC)
@@ -64,43 +63,16 @@ const PREDEFINED_ADDRESSES = [
 export async function promptAddress(): Promise<string> {
   const addressChoice = await p.select({
     message: 'Shipping address',
-    options: [
-      ...PREDEFINED_ADDRESSES.map((addr) => ({
-        label: addr.label,
-        value: addr.value,
-      })),
-      {
-        label: pc.dim('Enter custom address'),
-        value: '__CUSTOM__',
-      },
-    ],
+    options: PREDEFINED_ADDRESSES.map((addr) => ({
+      label: addr.label,
+      value: addr.value,
+    })),
     initialValue: PREDEFINED_ADDRESSES[0].value,
   });
 
   if (p.isCancel(addressChoice)) {
     p.cancel('Order cancelled.');
     process.exit(0);
-  }
-
-  // If custom address selected, prompt for input
-  if (addressChoice === '__CUSTOM__') {
-    const customAddress = await p.text({
-      message: 'Enter shipping address',
-      placeholder: 'e.g., 123 Main St, City, State ZIP',
-      validate: (value) => {
-        if (!value || value.trim().length === 0) {
-          return 'Address is required';
-        }
-        return undefined;
-      },
-    });
-
-    if (p.isCancel(customAddress)) {
-      p.cancel('Order cancelled.');
-      process.exit(0);
-    }
-
-    return (customAddress as string).trim();
   }
 
   return addressChoice as string;

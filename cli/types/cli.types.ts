@@ -72,6 +72,34 @@ export interface OrderResponse {
 }
 
 /**
+ * Warehouse inventory item
+ */
+export interface WarehouseInventoryItem {
+  id: string;
+  warehouseId: string;
+  productId: string;
+  quantity: number;
+  product: {
+    id: string;
+    sku: string;
+    name: string;
+    price: number;
+  };
+}
+
+/**
+ * Warehouse with inventory
+ */
+export interface Warehouse {
+  id: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  inventory: WarehouseInventoryItem[];
+}
+
+/**
  * API error response
  */
 export interface ApiError {

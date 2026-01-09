@@ -35,6 +35,36 @@ router.get(
 );
 
 /**
+ * GET /warehouses
+ * Get all warehouses with their inventory
+ */
+router.get(
+  "/warehouses",
+  asyncHandler(async (_req, res) => {
+    const warehouses = await prisma.warehouse.findMany({
+      include: {
+        inventory: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                sku: true,
+                name: true,
+                price: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        name: "asc",
+      },
+    });
+    res.json(warehouses);
+  })
+);
+
+/**
  * POST /orders
  * Create a new order
  */
