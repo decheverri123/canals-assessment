@@ -6,6 +6,7 @@
 import { Request, Response } from 'express';
 import { OrderController } from '../../src/controllers/order.controller';
 import { OrderService } from '../../src/services/order.service';
+import { IdempotencyService } from '../../src/services/idempotency.service';
 import { MockGeocodingService } from '../../src/services/geocoding.service';
 import { MockPaymentService } from '../../src/services/payment.service';
 import { WarehouseService } from '../../src/services/warehouse.service';
@@ -29,8 +30,9 @@ describe('OrderController Integration Tests', () => {
     const geocodingService = new MockGeocodingService();
     const paymentService = new MockPaymentService();
     const warehouseService = new WarehouseService(testPrisma);
+    const idempotencyService = new IdempotencyService(testPrisma);
     const orderService = new OrderService(testPrisma, geocodingService, paymentService, warehouseService);
-    controller = new OrderController(orderService);
+    controller = new OrderController(orderService, idempotencyService);
     
     mockResponse = {
       status: jest.fn().mockReturnThis(),
@@ -243,7 +245,7 @@ describe('OrderController Integration Tests', () => {
   });
 
   describe('createOrder - Error Scenarios', () => {
-    it('should throw error when insufficient inventory', async () => {
+    it('should return error when insufficient inventory', async () => {
       const product = await createTestProduct({ price: 1000 });
       const warehouse = await createTestWarehouse();
       await createTestInventory({
@@ -261,9 +263,12 @@ describe('OrderController Integration Tests', () => {
       };
 
       // Warehouse service fails first because no warehouse has sufficient inventory
-      await expect(
-        controller.createOrder(mockRequest as Request, mockResponse as Response)
-      ).rejects.toThrow('No single warehouse has all items');
+      // Controller now catches and returns the error via response
+      await controller.createOrder(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(400);
+      const responseCall = (mockResponse.json as jest.Mock).mock.calls[0][0];
+      expect(responseCall.code).toBe('SPLIT_SHIPMENT_NOT_SUPPORTED');
 
       // Verify no order was created
       const orders = await testPrisma.order.findMany();
@@ -281,7 +286,7 @@ describe('OrderController Integration Tests', () => {
       expect(inventory?.quantity).toBe(5);
     });
 
-    it('should throw error when payment fails (amount = 9999)', async () => {
+    it('should return error when payment fails (amount = 9999)', async () => {
       const product = await createTestProduct({ price: 9999 }); // $99.99 - triggers payment failure
       const warehouse = await createTestWarehouse();
       await createTestInventory({
@@ -298,9 +303,12 @@ describe('OrderController Integration Tests', () => {
         },
       };
 
-      await expect(
-        controller.createOrder(mockRequest as Request, mockResponse as Response)
-      ).rejects.toThrow('Payment processing failed');
+      // Controller now catches and returns the error via response
+      await controller.createOrder(mockRequest as Request, mockResponse as Response);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(402);
+      const responseCall = (mockResponse.json as jest.Mock).mock.calls[0][0];
+      expect(responseCall.code).toBe('PAYMENT_FAILED');
 
       // Verify no order was created (payment failed before order creation)
       const orders = await testPrisma.order.findMany();

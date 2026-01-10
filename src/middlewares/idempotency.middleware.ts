@@ -1,12 +1,20 @@
 /**
  * Idempotency middleware for preventing duplicate order creation
  * Uses Idempotency-Key header pattern backed by PostgreSQL
+ *
+ * Key improvements over naive implementation:
+ * - Customer-scoped keys (same key for different customers is allowed)
+ * - Request hash comparison (detects payload changes without storing sensitive data)
+ * - Stale-lock mechanism (allows retry after 30s if request gets stuck)
+ * - No res.json monkeypatching (explicit state updates in controller)
  */
 
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../config/database";
-import { IdempotencyCheckResult } from "../types/idempotency.types";
-import { Prisma } from "@prisma/client";
+import { IdempotencyContext, STALE_LOCK_THRESHOLD_MS } from "../types/idempotency.types";
+import { IdempotencyStatus, Prisma } from "@prisma/client";
+import { computeRequestHash } from "../utils/request-hash";
+import { CreateOrderRequest } from "./validation.middleware";
 
 /**
  * Header name for idempotency key (case-insensitive in Express)
@@ -14,68 +22,38 @@ import { Prisma } from "@prisma/client";
 const IDEMPOTENCY_HEADER = "idempotency-key";
 
 /**
- * Check existing idempotency key and determine its state
+ * Extend Express Request to include idempotency context
  */
-async function checkIdempotencyKey(
-  key: string,
-  requestParams: unknown
-): Promise<IdempotencyCheckResult> {
-  const existing = await prisma.idempotencyKey.findUnique({
-    where: { key },
-  });
-
-  if (!existing) {
-    // Create new record with lock
-    const record = await prisma.idempotencyKey.create({
-      data: {
-        key,
-        requestParams: requestParams as Prisma.InputJsonValue,
-        createdAt: new Date(),
-        lockedAt: new Date(),
-      },
-    });
-    return { status: "new", record };
-  }
-
-  // Check if response has been stored (completed)
-  if (existing.responseStatus !== null) {
-    return { status: "completed", record: existing };
-  }
-
-  // No response yet - request is in-flight
-  return { status: "in_flight", record: existing };
-}
-
-/**
- * Stable JSON stringify that sorts keys for consistent comparison
- */
-function stableStringify(obj: unknown): string {
-  return JSON.stringify(obj, (_, value) => {
-    if (value && typeof value === "object" && !Array.isArray(value)) {
-      return Object.keys(value)
-        .sort()
-        .reduce((sorted: Record<string, unknown>, key) => {
-          sorted[key] = value[key];
-          return sorted;
-        }, {});
+declare global {
+  namespace Express {
+    interface Request {
+      idempotency?: IdempotencyContext;
     }
-    return value;
-  });
+  }
 }
 
 /**
- * Compare request params to detect key reuse with different payload
+ * Check if a lock is stale (older than threshold)
  */
-function paramsMatch(stored: unknown, current: unknown): boolean {
-  return stableStringify(stored) === stableStringify(current);
+function isLockStale(lockedAt: Date): boolean {
+  const now = Date.now();
+  const lockAge = now - lockedAt.getTime();
+  return lockAge > STALE_LOCK_THRESHOLD_MS;
 }
 
 /**
  * Idempotency middleware
- * - If Idempotency-Key header is missing, proceeds normally
- * - If key exists with response, returns cached response
- * - If key exists without response (in-flight), returns 409 Conflict
- * - If key is new, creates record and intercepts response to store it
+ *
+ * Behavior:
+ * - If no Idempotency-Key header: pass through (no idempotency)
+ * - If key exists and COMPLETED/FAILED: return cached response
+ * - If key exists and PROCESSING:
+ *   - If stale (>30s): takeover and reprocess
+ *   - If fresh: return 409 Conflict
+ * - If key is new: insert PROCESSING row, attach context to req
+ *
+ * The controller is responsible for updating the idempotency state
+ * to COMPLETED or FAILED after processing.
  */
 export const idempotencyMiddleware = async (
   req: Request,
@@ -90,73 +68,46 @@ export const idempotencyMiddleware = async (
     return;
   }
 
+  // Extract customer email for scoping (validation has already run at this point)
+  const body = req.body as CreateOrderRequest;
+  const customerKey = body.customer.email;
+  const requestHash = computeRequestHash(body);
+
   try {
-    const result = await checkIdempotencyKey(idempotencyKey, req.body);
+    // Try to insert a new PROCESSING record
+    const record = await prisma.idempotencyKey.create({
+      data: {
+        customerKey,
+        key: idempotencyKey,
+        requestHash,
+        status: IdempotencyStatus.PROCESSING,
+        lockedAt: new Date(),
+      },
+    });
 
-    switch (result.status) {
-      case "completed": {
-        // Validate request params match
-        if (!paramsMatch(result.record.requestParams, req.body)) {
-          res.status(422).json({
-            error: "Idempotency key reused with different request parameters",
-            code: "IDEMPOTENCY_PARAMS_MISMATCH",
-          });
-          return;
-        }
+    // New record created - attach context for controller
+    req.idempotency = {
+      id: record.id,
+      customerKey: record.customerKey,
+      key: record.key,
+    };
 
-        // Return cached response
-        res
-          .status(result.record.responseStatus as number)
-          .json(result.record.responseBody);
-        return;
-      }
-
-      case "in_flight": {
-        // Request is already being processed
-        res.status(409).json({
-          error: "A request with this idempotency key is already in progress",
-          code: "IDEMPOTENCY_IN_FLIGHT",
-        });
-        return;
-      }
-
-      case "new": {
-        // Intercept res.json to capture and store the response
-        const originalJson = res.json.bind(res);
-
-        res.json = function (body: unknown): Response {
-          // Store the response in the database (fire-and-forget for performance)
-          // The response is sent immediately while DB update happens in background
-          prisma.idempotencyKey
-            .update({
-              where: { key: idempotencyKey },
-              data: {
-                responseStatus: res.statusCode,
-                responseBody: body as Prisma.InputJsonValue,
-              },
-            })
-            .catch((err: Error) => {
-              console.error("Failed to update idempotency record:", err);
-            });
-
-          // Call original json method
-          return originalJson(body);
-        };
-
-        next();
-        return;
-      }
-    }
+    next();
+    return;
   } catch (error) {
-    // Handle race condition - unique constraint violation means another request created the key
+    // Handle unique constraint violation (key already exists for this customer)
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      res.status(409).json({
-        error: "A request with this idempotency key is already in progress",
-        code: "IDEMPOTENCY_IN_FLIGHT",
-      });
+      await handleExistingKey(
+        res,
+        next,
+        req,
+        customerKey,
+        idempotencyKey,
+        requestHash
+      );
       return;
     }
 
@@ -164,3 +115,86 @@ export const idempotencyMiddleware = async (
     next(error);
   }
 };
+
+/**
+ * Handle an existing idempotency key
+ *
+ * @param res - Express response
+ * @param next - Express next function
+ * @param req - Express request (to attach context if takeover)
+ * @param customerKey - Customer email
+ * @param key - Idempotency key
+ * @param requestHash - Hash of current request
+ */
+async function handleExistingKey(
+  res: Response,
+  next: NextFunction,
+  req: Request,
+  customerKey: string,
+  key: string,
+  requestHash: string
+): Promise<void> {
+  const existing = await prisma.idempotencyKey.findUnique({
+    where: {
+      customerKey_key: { customerKey, key },
+    },
+  });
+
+  // Race condition: record was deleted between insert and lookup
+  if (!existing) {
+    res.status(409).json({
+      error: "A request with this idempotency key is already in progress",
+      code: "IDEMPOTENCY_IN_FLIGHT",
+    });
+    return;
+  }
+
+  // Validate request hash matches
+  if (existing.requestHash !== requestHash) {
+    res.status(422).json({
+      error: "Idempotency key reused with different request parameters",
+      code: "IDEMPOTENCY_PARAMS_MISMATCH",
+    });
+    return;
+  }
+
+  // Handle based on status
+  switch (existing.status) {
+    case IdempotencyStatus.COMPLETED:
+    case IdempotencyStatus.FAILED: {
+      // Return cached response
+      res
+        .status(existing.responseStatus as number)
+        .json(existing.responseBody);
+      return;
+    }
+
+    case IdempotencyStatus.PROCESSING: {
+      // Check if lock is stale
+      if (isLockStale(existing.lockedAt)) {
+        // Takeover: update lockedAt and proceed with processing
+        await prisma.idempotencyKey.update({
+          where: { id: existing.id },
+          data: { lockedAt: new Date() },
+        });
+
+        // Attach context for controller
+        req.idempotency = {
+          id: existing.id,
+          customerKey: existing.customerKey,
+          key: existing.key,
+        };
+
+        next();
+        return;
+      }
+
+      // Lock is fresh - return conflict
+      res.status(409).json({
+        error: "A request with this idempotency key is already in progress",
+        code: "IDEMPOTENCY_IN_FLIGHT",
+      });
+      return;
+    }
+  }
+}
