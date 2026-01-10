@@ -25,16 +25,6 @@ export class BusinessError extends Error {
 }
 
 /**
- * Custom error for split shipment scenarios
- */
-export class SplitShipmentError extends BusinessError {
-  constructor(message: string = "Split shipment not supported") {
-    super(message, 400, "SPLIT_SHIPMENT_NOT_SUPPORTED");
-    this.name = "SplitShipmentError";
-  }
-}
-
-/**
  * Async error wrapper to catch errors in async route handlers
  */
 export const asyncHandler = (

@@ -8,7 +8,7 @@ import { z } from 'zod';
 /**
  * Zod schema for POST /orders request body
  */
-export const createOrderSchema = z.object({
+const createOrderSchema = z.object({
   customer: z.object({
     email: z.string().email('Invalid email address'),
   }),

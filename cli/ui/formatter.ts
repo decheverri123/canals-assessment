@@ -407,7 +407,7 @@ export function displayWarehouseInventory(
   const customerCoords = geocodeAddress(customerAddress);
 
   console.log('');
-  console.log(pc.bold(pc.cyan('[📦] Warehouse Inventory Overview')));
+  console.log(pc.bold(pc.cyan('[#] Warehouse Inventory Overview')));
   console.log(divider);
 
   // Calculate distances and determine which warehouse would be selected
@@ -486,7 +486,7 @@ export function displayWarehouseInventory(
     console.log('');
     console.log(
       pc.red(
-        '   ⚠ No single warehouse has all requested items in sufficient quantity'
+        '   [!] No single warehouse has all requested items in sufficient quantity'
       )
     );
   }
