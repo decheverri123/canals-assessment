@@ -9,6 +9,12 @@ if command -v pg_isready >/dev/null 2>&1; then
     sleep 2
   done
   echo "Database is ready!"
+
+# Create test database if it doesn't exist (for running tests in Docker)
+echo "Ensuring test database exists..."
+PGPASSWORD=canals_password psql -h postgres -U canals_user -d canals_db -tc "SELECT 1 FROM pg_database WHERE datname = 'canals_test_db'" | grep -q 1 || \
+  PGPASSWORD=canals_password psql -h postgres -U canals_user -d canals_db -c "CREATE DATABASE canals_test_db;"
+echo "Test database ready!"
 else
   echo "pg_isready not available, Prisma will handle connection retries"
 fi

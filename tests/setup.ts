@@ -5,11 +5,21 @@
 
 import { PrismaClient } from "@prisma/client";
 
+// Ensure we're using the test database
+const baseUrl = process.env.DATABASE_URL || "postgresql://canals_user:canals_password@localhost:5432/canals_db";
+const testDbUrl = baseUrl.includes("canals_test_db") ? baseUrl : baseUrl.replace(/\/[^/]+$/, "/canals_test_db");
+process.env.DATABASE_URL = testDbUrl;
+
 /**
  * Prisma client instance for tests
- * Uses a separate instance to avoid conflicts with the main app
+ * Uses a separate test database to avoid affecting production data
  */
 export const testPrisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: testDbUrl,
+    },
+  },
   log: process.env.DEBUG ? ["query", "error", "warn"] : [],
 });
 

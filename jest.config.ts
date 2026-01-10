@@ -15,6 +15,9 @@ const config: Config = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
+  // Use a separate test database to avoid affecting production data
+  globalSetup: '<rootDir>/tests/global-setup.ts',
+  globalTeardown: '<rootDir>/tests/global-teardown.ts',
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   testTimeout: 30000, // 30 seconds for integration tests
   verbose: true,
