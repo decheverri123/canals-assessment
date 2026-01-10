@@ -191,12 +191,38 @@ Creates a new order, validates stock, and processes payment.
 
 The project includes focused Integration and Unit tests covering critical business logic.
 
+### Running Tests Locally
+
 ```bash
 # Run all tests
 pnpm test
 
 # Run tests with coverage report
 pnpm test:coverage
+```
+
+### Running Tests in Docker
+
+To run the Jest test suite inside the Docker container:
+
+```bash
+# First, ensure the containers are running
+docker compose up -d
+
+# Run all tests inside the app container
+docker compose exec app pnpm test
+
+# Run tests with coverage
+docker compose exec app pnpm test:coverage
+
+# Run tests in watch mode (useful for development)
+docker compose exec app pnpm test:watch
+```
+
+Alternatively, run tests as a one-off command (starts a new container):
+
+```bash
+docker compose run --rm app pnpm test
 ```
 
 ### Coverage Highlights

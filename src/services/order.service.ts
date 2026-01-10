@@ -262,8 +262,10 @@ export class OrderService {
       );
     } catch (error) {
       // If payment was processed but transaction failed, attempt refund
-      if (paymentResult?.success && paymentResult.transactionId) {
-        await this.handleTransactionFailure(error, paymentResult, totalAmount);
+      // Type assertion needed because TypeScript doesn't track closure assignments
+      const payment = paymentResult as PaymentResult | null;
+      if (payment?.success && payment.transactionId) {
+        await this.handleTransactionFailure(error, payment, totalAmount);
       }
       throw error;
     }
@@ -327,7 +329,7 @@ export class OrderService {
   private async processOrderPayment(
     validatedData: CreateOrderRequest,
     totalAmount: number
-  ) {
+  ): Promise<PaymentResult> {
     const { creditCard } = validatedData.paymentDetails;
     const paymentResult = await this.paymentService.processPayment(
       creditCard,
