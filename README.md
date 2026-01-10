@@ -466,6 +466,8 @@ Returns available warehouses with their locations.
 Creates a new order, validates stock, and processes payment.
 
 - **Endpoint**: `POST /orders`
+- **Headers**:
+  - `Idempotency-Key` (optional): A unique string to prevent duplicate order creation. See [Idempotency](#idempotency) section below.
 - **Body**:
 
 ```json
@@ -489,6 +491,34 @@ Creates a new order, validates stock, and processes payment.
   "totalAmount": 129999
 }
 ```
+
+### Idempotency
+
+The `POST /orders` endpoint supports idempotent requests using the `Idempotency-Key` header. This prevents duplicate orders when clients retry requests due to network issues or timeouts.
+
+**How to use:**
+
+```bash
+curl -X POST http://localhost:3000/orders \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: unique-request-id-12345" \
+  -d '{"customer":{"email":"test@example.com"},"address":"123 Main St","paymentDetails":{"creditCard":"4111111111111111"},"items":[{"productId":"...","quantity":1}]}'
+```
+
+**Behavior:**
+
+| Scenario | Response |
+|----------|----------|
+| First request with key | Order created, response cached, returns `201` |
+| Retry with same key and same body | Returns cached response (no duplicate order) |
+| Same key with different body | Returns `422 Unprocessable Entity` |
+| Key already in-flight (concurrent request) | Returns `409 Conflict` |
+| No `Idempotency-Key` header | Normal processing (no idempotency) |
+
+**Best practices:**
+- Use UUIDs or similar unique identifiers as idempotency keys
+- Generate a new key for each distinct order attempt
+- Store the key client-side until you receive a successful response
 
 ### Health Check
 
@@ -532,12 +562,16 @@ Creates a new order, validates stock, and processes payment.
 
 ### Payment Idempotency
 
-**Current Implementation**: No idempotency protection for order creation.
+**Current Implementation**: The `POST /orders` endpoint supports optional `Idempotency-Key` header for preventing duplicate order creation. Keys are stored in PostgreSQL with response caching.
 
-**Production Solutions**:
+**How it works**:
+- Client provides unique `Idempotency-Key` header
+- First request: creates order, caches response in database
+- Retry with same key: returns cached response (no duplicate order)
+- Concurrent requests with same key: returns `409 Conflict`
 
-- Require `Idempotency-Key` header for order creation
-- Store idempotency keys in database, return same order for duplicate requests
+**Future enhancements**:
+- Automatic key expiration/cleanup
 - Use payment-provider idempotency features (payment intent idempotency)
 
 ### Credit Card Handling

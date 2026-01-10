@@ -62,6 +62,7 @@ export async function cleanupTestDatabase(): Promise<void> {
     await testPrisma.inventory.deleteMany();
     await testPrisma.product.deleteMany();
     await testPrisma.warehouse.deleteMany();
+    await testPrisma.idempotencyKey.deleteMany();
   } catch (error) {
     console.error("Failed to cleanup test database:", error);
     throw error;

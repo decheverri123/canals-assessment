@@ -6,6 +6,7 @@ import { Router } from "express";
 import { OrderController } from "../controllers/order.controller";
 import { validateCreateOrder } from "../middlewares/validation.middleware";
 import { asyncHandler } from "../middlewares/error-handler.middleware";
+import { idempotencyMiddleware } from "../middlewares/idempotency.middleware";
 import { prisma } from "../config/database";
 import { OrderService } from "../services/order.service";
 import { MockGeocodingService } from "../services/geocoding.service";
@@ -75,9 +76,11 @@ router.get(
 /**
  * POST /orders
  * Create a new order
+ * Uses idempotency middleware to prevent duplicate orders
  */
 router.post(
   "/orders",
+  asyncHandler(idempotencyMiddleware),
   validateCreateOrder,
   asyncHandler((req, res) => orderController.createOrder(req, res))
 );

@@ -75,3 +75,14 @@ enum OrderStatus {
 
   @@map("order_status")
 }
+
+model IdempotencyKey {
+  key            String   @id
+  responseStatus Int?
+  responseBody   Json?
+  requestParams  Json
+  createdAt      DateTime @default(now())
+  lockedAt       DateTime @default(now())
+
+  @@map("idempotency_keys")
+}
