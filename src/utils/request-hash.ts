@@ -34,7 +34,7 @@ interface CanonicalizedOrderRequest {
  * @param body - The validated order request body
  * @returns Canonicalized request object (no sensitive data)
  */
-export function canonicalizeOrderRequest(
+function canonicalizeOrderRequest(
   body: CreateOrderRequest
 ): CanonicalizedOrderRequest {
   // Sort items by productId for deterministic ordering
@@ -60,7 +60,7 @@ export function canonicalizeOrderRequest(
  * @param canonicalized - The canonicalized request object
  * @returns Hex-encoded SHA-256 hash
  */
-export function hashRequest(canonicalized: CanonicalizedOrderRequest): string {
+function hashRequest(canonicalized: CanonicalizedOrderRequest): string {
   const json = JSON.stringify(canonicalized);
   return createHash("sha256").update(json).digest("hex");
 }
