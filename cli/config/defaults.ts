@@ -10,7 +10,7 @@ export const DEFAULTS = {
   /** Default shipping address */
   address: "123 Main St, New York, NY 10001",
 
-  /** Default credit card number (test card) */
+  /** Default credit card number (test card) - NEVER use real cards in development */
   creditCard: "4111111111111111",
 
   /** Default API base URL */

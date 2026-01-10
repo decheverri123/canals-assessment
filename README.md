@@ -165,7 +165,7 @@ graph TD
     OrderCtrl -.->|Success Response| Client
 ```
 
-The architecture consists of three primary layers, each with distinct responsibilities:
+The architecture consists of four primary layers, each with distinct responsibilities:
 
 **Controller Layer** (`src/controllers`): Handles HTTP concerns - parsing requests, validating input schemas, and formatting responses. Critically, controllers know nothing about business logic. They simply orchestrate the flow of data between the HTTP world and the domain model. Think of the controller as a conductor - it knows when each section of the orchestra should play but doesn't play any instruments itself.
 

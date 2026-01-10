@@ -317,6 +317,11 @@ describe("Idempotency Middleware Integration Tests", () => {
     });
   });
 
+  /**
+   * Tests that deterministic 4xx errors are cached via idempotency
+   * Note: We use a non-existent product ID to trigger the warehouse service
+   * to throw a 400 error (no warehouse can fulfill order)
+   */
   describe("Deterministic error caching", () => {
     it("should cache deterministic 4xx errors", async () => {
       const orderData = await setupOrderData();
