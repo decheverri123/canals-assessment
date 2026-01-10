@@ -27,6 +27,11 @@ export const createOrderSchema = z.object({
       })
     )
     .min(1, 'At least one item is required'),
+  /**
+   * Optional idempotency key to prevent duplicate order creation.
+   * If provided, the same key will return the cached response for 24 hours.
+   */
+  idempotencyKey: z.string().min(1).max(255).optional(),
 });
 
 /**

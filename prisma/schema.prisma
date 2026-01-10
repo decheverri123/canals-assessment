@@ -51,9 +51,23 @@ model Order {
   totalAmount     Int
   status          OrderStatus @default(PENDING)
   createdAt       DateTime    @default(now())
+  idempotencyKey  String?     @unique
+  warehouseId     String?
   orderItems      OrderItem[]
 
   @@map("orders")
+}
+
+model IdempotencyRecord {
+  id            String   @id @default(uuid())
+  idempotencyKey String  @unique
+  orderId       String?
+  response      Json
+  createdAt     DateTime @default(now())
+  expiresAt     DateTime
+
+  @@index([expiresAt])
+  @@map("idempotency_records")
 }
 
 model OrderItem {

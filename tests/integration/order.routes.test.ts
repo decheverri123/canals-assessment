@@ -340,4 +340,108 @@ describe("Order Routes Integration Tests", () => {
       expect(response.body.error).toBe("Payment processing failed");
     });
   });
+
+  describe("POST /orders - Idempotency", () => {
+    it("should return same response for duplicate requests with same idempotency key", async () => {
+      const product = await createTestProduct({ price: 1000 });
+      const warehouse = await createTestWarehouse();
+      await createTestInventory({
+        warehouseId: warehouse.id,
+        productId: product.id,
+        quantity: 10,
+      });
+
+      const idempotencyKey = `test-key-${Date.now()}`;
+      const orderData = {
+        paymentDetails: { creditCard: "4111111111111111" },
+        customer: { email: "idempotent@example.com" },
+        address: "123 Main St, New York, NY 10001",
+        items: [{ productId: product.id, quantity: 2 }],
+        idempotencyKey,
+      };
+
+      // First request - should create order
+      const response1 = await request(app)
+        .post("/orders")
+        .send(orderData)
+        .expect(201);
+
+      expect(response1.body.id).toBeDefined();
+      const firstOrderId = response1.body.id;
+
+      // Second request with same idempotency key - should return cached response
+      const response2 = await request(app)
+        .post("/orders")
+        .send(orderData)
+        .expect(201);
+
+      expect(response2.body.id).toBe(firstOrderId);
+      expect(response2.body.totalAmount).toBe(response1.body.totalAmount);
+
+      // Verify only one order was created
+      const orders = await testPrisma.order.findMany({
+        where: { customerEmail: "idempotent@example.com" },
+      });
+      expect(orders).toHaveLength(1);
+
+      // Verify inventory was only deducted once
+      const inventory = await testPrisma.inventory.findUnique({
+        where: {
+          warehouseId_productId: {
+            warehouseId: warehouse.id,
+            productId: product.id,
+          },
+        },
+      });
+      expect(inventory?.quantity).toBe(8); // 10 - 2 = 8 (only one deduction)
+    });
+
+    it("should create separate orders for different idempotency keys", async () => {
+      const product = await createTestProduct({ price: 1000 });
+      const warehouse = await createTestWarehouse();
+      await createTestInventory({
+        warehouseId: warehouse.id,
+        productId: product.id,
+        quantity: 20,
+      });
+
+      const baseOrderData = {
+        paymentDetails: { creditCard: "4111111111111111" },
+        customer: { email: "different-keys@example.com" },
+        address: "123 Main St, New York, NY 10001",
+        items: [{ productId: product.id, quantity: 2 }],
+      };
+
+      // First request with key 1
+      const response1 = await request(app)
+        .post("/orders")
+        .send({ ...baseOrderData, idempotencyKey: "key-1" })
+        .expect(201);
+
+      // Second request with key 2 - should create new order
+      const response2 = await request(app)
+        .post("/orders")
+        .send({ ...baseOrderData, idempotencyKey: "key-2" })
+        .expect(201);
+
+      expect(response1.body.id).not.toBe(response2.body.id);
+
+      // Verify two orders were created
+      const orders = await testPrisma.order.findMany({
+        where: { customerEmail: "different-keys@example.com" },
+      });
+      expect(orders).toHaveLength(2);
+
+      // Verify inventory was deducted twice
+      const inventory = await testPrisma.inventory.findUnique({
+        where: {
+          warehouseId_productId: {
+            warehouseId: warehouse.id,
+            productId: product.id,
+          },
+        },
+      });
+      expect(inventory?.quantity).toBe(16); // 20 - 2 - 2 = 16
+    });
+  });
 });
