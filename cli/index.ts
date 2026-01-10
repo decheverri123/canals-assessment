@@ -14,9 +14,9 @@ import { fetchProducts, fetchWarehouses, submitOrder } from './services/api.serv
 import { selectProducts, setQuantities } from './prompts/product.prompt';
 import { promptCustomerInfo } from './prompts/customer.prompt';
 import { promptPaymentInfo } from './prompts/payment.prompt';
-import { displayOrderSummary, displayOrderSuccess, displayError, displayCurlCommand, displayRawResponse, displayWarehouseInventory } from './ui/formatter';
+import { displayOrderSummary, displayOrderSuccess, displayError, displayCurlCommand, displayRawResponse, displayWarehouseInventory, displayWarehouseBoxes } from './ui/formatter';
 import { generateCurlCommand } from './services/api.service';
-import type { OrderRequest, Product } from './types/cli.types';
+import type { OrderRequest, Product, Warehouse, OrderItem } from './types/cli.types';
 
 /**
  * Main CLI flow
@@ -61,8 +61,9 @@ async function main(): Promise<void> {
 
     // Step 3.5: Fetch and display warehouse inventory
     const fetchWarehouseSpinner = ora('Fetching warehouse inventory...').start();
+    let warehouses: Warehouse[] = [];
     try {
-      const warehouses = await fetchWarehouses();
+      warehouses = await fetchWarehouses();
       fetchWarehouseSpinner.succeed(pc.green(`Loaded ${warehouses.length} warehouses`));
       
       // Display warehouse inventory overview
@@ -128,6 +129,16 @@ async function main(): Promise<void> {
       
       // Display formatted result
       displayOrderSuccess(result.response);
+      
+      // Display warehouse selection boxes (shows which warehouse was chosen)
+      if (warehouses.length > 0) {
+        displayWarehouseBoxes(
+          warehouses,
+          orderItems,
+          result.response.warehouse.id,
+          customerInfo.address
+        );
+      }
       
       // Display raw curl command and response
       displayCurlCommand(result.curlCommand);

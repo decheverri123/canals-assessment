@@ -182,6 +182,181 @@ export function displayRawResponse(rawResponse: string): void {
 }
 
 /**
+ * Create a box with optional colored border
+ */
+function createBox(
+  lines: string[],
+  width: number,
+  borderColor: (s: string) => string = pc.dim,
+  title?: string
+): string[] {
+  const horizontalLine = borderColor('─'.repeat(width - 2));
+  const topLeft = borderColor('┌');
+  const topRight = borderColor('┐');
+  const bottomLeft = borderColor('└');
+  const bottomRight = borderColor('┘');
+  const vertical = borderColor('│');
+
+  const output: string[] = [];
+
+  // Top border with optional title
+  if (title) {
+    const titleText = ` ${title} `;
+    const remainingWidth = width - 4 - titleText.length;
+    const leftPad = Math.floor(remainingWidth / 2);
+    const rightPad = remainingWidth - leftPad;
+    output.push(
+      topLeft +
+        borderColor('─'.repeat(leftPad)) +
+        borderColor(titleText) +
+        borderColor('─'.repeat(rightPad)) +
+        topRight
+    );
+  } else {
+    output.push(topLeft + horizontalLine + topRight);
+  }
+
+  // Content lines
+  for (const line of lines) {
+    // Strip ANSI codes for length calculation
+    const visibleLength = line.replace(/\x1b\[[0-9;]*m/g, '').length;
+    const padding = width - 4 - visibleLength;
+    output.push(vertical + ' ' + line + ' '.repeat(Math.max(0, padding)) + ' ' + vertical);
+  }
+
+  // Bottom border
+  output.push(bottomLeft + horizontalLine + bottomRight);
+
+  return output;
+}
+
+/**
+ * Display warehouse selection boxes after order completion
+ * Shows all warehouses with the selected one highlighted in green
+ */
+export function displayWarehouseBoxes(
+  warehouses: Warehouse[],
+  selectedItems: OrderItem[],
+  selectedWarehouseId: string,
+  customerAddress: string
+): void {
+  const customerCoords = geocodeAddress(customerAddress);
+  const boxWidth = 42;
+
+  console.log('');
+  console.log(pc.bold(pc.cyan('[*] Warehouse Selection')));
+  console.log('');
+
+  // Calculate distances for each warehouse
+  const warehousesWithDistance = warehouses.map((warehouse) => {
+    const distance = calculateDistance(
+      customerCoords.latitude,
+      customerCoords.longitude,
+      warehouse.latitude,
+      warehouse.longitude
+    );
+
+    const hasAllItems = selectedItems.every((item) => {
+      const inventory = warehouse.inventory.find(
+        (inv) => inv.productId === item.product.id
+      );
+      return inventory && inventory.quantity >= item.quantity;
+    });
+
+    return { warehouse, distance, hasAllItems };
+  });
+
+  // Sort by distance
+  warehousesWithDistance.sort((a, b) => a.distance - b.distance);
+
+  // Create boxes side by side
+  const allBoxLines: string[][] = [];
+
+  for (const { warehouse, distance, hasAllItems } of warehousesWithDistance) {
+    const isSelected = warehouse.id === selectedWarehouseId;
+    const borderColor = isSelected ? pc.green : pc.dim;
+    
+    const lines: string[] = [];
+    
+    // Warehouse name and distance
+    lines.push(pc.bold(warehouse.name));
+    lines.push(pc.dim(`${distance.toFixed(1)} km away`));
+    lines.push('');
+    
+    // Location (truncated if needed)
+    const location = warehouse.address.length > boxWidth - 6 
+      ? warehouse.address.substring(0, boxWidth - 9) + '...'
+      : warehouse.address;
+    lines.push(pc.dim('Location:'));
+    lines.push(location);
+    lines.push('');
+    
+    // Inventory status
+    lines.push(pc.dim('Inventory:'));
+    for (const item of selectedItems) {
+      const inventory = warehouse.inventory.find(
+        (inv) => inv.productId === item.product.id
+      );
+      const available = inventory?.quantity ?? 0;
+      const requested = item.quantity;
+      const hasEnough = available >= requested;
+      
+      const productName = item.product.name.length > 20 
+        ? item.product.name.substring(0, 17) + '...'
+        : item.product.name;
+      
+      const status = hasEnough 
+        ? pc.green(`[${requested}/${available}]`)
+        : pc.red(`[${requested}/${available}]`);
+      
+      lines.push(`  ${productName} ${status}`);
+    }
+    lines.push('');
+    
+    // Status badge
+    if (isSelected) {
+      lines.push(pc.green(pc.bold('[+] SELECTED')));
+    } else if (hasAllItems) {
+      lines.push(pc.yellow('[~] Available'));
+    } else {
+      lines.push(pc.red('[-] Insufficient'));
+    }
+
+    const title = isSelected ? 'SELECTED' : undefined;
+    const boxLines = createBox(lines, boxWidth, borderColor, title);
+    allBoxLines.push(boxLines);
+  }
+
+  // Print boxes side by side if terminal is wide enough, otherwise vertically
+  const terminalWidth = process.stdout.columns || 120;
+  const totalBoxWidth = boxWidth * allBoxLines.length + (allBoxLines.length - 1) * 2;
+
+  if (terminalWidth >= totalBoxWidth && allBoxLines.length > 0) {
+    // Print side by side
+    const maxLines = Math.max(...allBoxLines.map(b => b.length));
+    for (let i = 0; i < maxLines; i++) {
+      const row = allBoxLines.map(box => {
+        if (i < box.length) {
+          return box[i];
+        }
+        return ' '.repeat(boxWidth);
+      }).join('  ');
+      console.log('  ' + row);
+    }
+  } else {
+    // Print vertically
+    for (const boxLines of allBoxLines) {
+      for (const line of boxLines) {
+        console.log('  ' + line);
+      }
+      console.log('');
+    }
+  }
+
+  console.log('');
+}
+
+/**
  * Simple JSON colorizer for terminal output
  */
 function colorizeJson(jsonString: string): string {

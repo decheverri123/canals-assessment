@@ -15,7 +15,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "cli": "ts-node cli/index.ts",
-    "docker:rebuild": "docker compose down && docker compose build --no-cache app && docker compose up"
+    "docker:rebuild": "docker compose down && docker compose build --no-cache app && docker compose up",
+    "docker:db": "docker compose up -d postgres"
   },
   "keywords": [],
   "author": "",
