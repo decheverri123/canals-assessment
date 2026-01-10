@@ -14,7 +14,7 @@ import { fetchProducts, fetchWarehouses, submitOrder } from './services/api.serv
 import { selectProducts, setQuantities } from './prompts/product.prompt';
 import { promptCustomerInfo } from './prompts/customer.prompt';
 import { promptPaymentInfo } from './prompts/payment.prompt';
-import { displayOrderSummary, displayOrderSuccess, displayError, displayCurlCommand, displayRawResponse, displayWarehouseInventory, displayWarehouseBoxes } from './ui/formatter';
+import { displayOrderSummary, displayOrderSuccess, displayError, displayCurlCommand, displayRawResponse, displayWarehouseBoxes } from './ui/formatter';
 import { generateCurlCommand } from './services/api.service';
 import type { OrderRequest, Product, Warehouse, OrderItem } from './types/cli.types';
 
@@ -59,15 +59,12 @@ async function main(): Promise<void> {
     // Step 3: Get customer info
     const customerInfo = await promptCustomerInfo();
 
-    // Step 3.5: Fetch and display warehouse inventory
+    // Step 3.5: Fetch warehouse inventory (for display after order success)
     const fetchWarehouseSpinner = ora('Fetching warehouse inventory...').start();
     let warehouses: Warehouse[] = [];
     try {
       warehouses = await fetchWarehouses();
       fetchWarehouseSpinner.succeed(pc.green(`Loaded ${warehouses.length} warehouses`));
-      
-      // Display warehouse inventory overview
-      displayWarehouseInventory(warehouses, orderItems, customerInfo.address);
     } catch (error) {
       fetchWarehouseSpinner.fail(pc.yellow('Could not fetch warehouse inventory'));
       // Continue anyway - this is just informational
