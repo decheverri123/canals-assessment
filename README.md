@@ -466,6 +466,8 @@ Returns available warehouses with their locations.
 Creates a new order, validates stock, and processes payment.
 
 - **Endpoint**: `POST /orders`
+- **Headers**:
+  - `Idempotency-Key` (optional): A unique string to prevent duplicate order creation. See [Idempotency](#idempotency) section below.
 - **Body**:
 
 ```json
@@ -489,6 +491,42 @@ Creates a new order, validates stock, and processes payment.
   "totalAmount": 129999
 }
 ```
+
+### Idempotency
+
+The `POST /orders` endpoint supports idempotent requests using the `Idempotency-Key` header. This prevents duplicate orders when clients retry requests due to network issues or timeouts.
+
+**How to use:**
+
+```bash
+curl -X POST http://localhost:3000/orders \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: unique-request-id-12345" \
+  -d '{"customer":{"email":"test@example.com"},"address":"123 Main St","paymentDetails":{"creditCard":"4111111111111111"},"items":[{"productId":"...","quantity":1}]}'
+```
+
+**Key features:**
+- **Customer-scoped keys**: Idempotency keys are scoped per customer (email). The same key can be reused by different customers.
+- **Stale-lock recovery**: If a request gets stuck processing for more than 30 seconds, subsequent requests with the same key will retry (take over the lock).
+- **No sensitive data stored**: Payment details are never persisted. Only a hash of the canonicalized request is stored for comparison.
+- **Validation-first**: Invalid requests are rejected before any idempotency records are created.
+
+**Behavior:**
+
+| Scenario | Response |
+|----------|----------|
+| First request with key | Order created, response cached, returns `201` |
+| Retry with same key and same body | Returns cached response (no duplicate order) |
+| Same key with different body (excluding payment) | Returns `422 Unprocessable Entity` |
+| Key already in-flight (concurrent request) | Returns `409 Conflict` |
+| Key in-flight for >30 seconds (stale) | Request proceeds (stale-lock takeover) |
+| No `Idempotency-Key` header | Normal processing (no idempotency) |
+
+**Best practices:**
+- Use UUIDs or similar unique identifiers as idempotency keys
+- Generate a new key for each distinct order attempt
+- Store the key client-side until you receive a successful response
+- Keys are safe to reuse across different customer accounts
 
 ### Health Check
 
@@ -530,15 +568,21 @@ Creates a new order, validates stock, and processes payment.
 - Explicit redaction of sensitive values (credit card numbers)
 - Critical errors trigger PagerDuty alerts
 
-### Payment Idempotency
+### Idempotency Implementation
 
-**Current Implementation**: No idempotency protection for order creation.
+**Current Implementation**: The `POST /orders` endpoint supports the `Idempotency-Key` header for preventing duplicate order creation with production-ready safety mechanisms.
 
-**Production Solutions**:
+**Key features implemented**:
+- **Customer-scoped keys**: Keys are unique per customer (email), allowing key reuse across accounts
+- **Request hash validation**: A SHA-256 hash of the canonicalized request (excluding payment details) is stored for detecting payload changes
+- **Stale-lock recovery**: Requests stuck in "processing" state for >30 seconds can be retried by subsequent requests
+- **No sensitive data storage**: Payment details are never persisted; only a hash is stored
+- **Deterministic error caching**: Only 2xx and 4xx responses are cached; 5xx errors allow retry via stale-lock
 
-- Require `Idempotency-Key` header for order creation
-- Store idempotency keys in database, return same order for duplicate requests
+**Future enhancements**:
+- Automatic key expiration/cleanup (TTL-based)
 - Use payment-provider idempotency features (payment intent idempotency)
+- Redis-backed idempotency for horizontal scaling
 
 ### Credit Card Handling
 

@@ -75,3 +75,27 @@ enum OrderStatus {
 
   @@map("order_status")
 }
+
+enum IdempotencyStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+
+  @@map("idempotency_status")
+}
+
+model IdempotencyKey {
+  id             String            @id @default(uuid())
+  customerKey    String
+  key            String
+  requestHash    String
+  status         IdempotencyStatus @default(PROCESSING)
+  responseStatus Int?
+  responseBody   Json?
+  lockedAt       DateTime          @default(now())
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@unique([customerKey, key])
+  @@map("idempotency_keys")
+}
